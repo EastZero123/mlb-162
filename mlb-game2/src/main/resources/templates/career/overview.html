@@ -30,6 +30,22 @@
         </dl>
     </section>
 
+    <!-- 능력치 (은퇴 선수는 은퇴 시점) -->
+    <section class="card section">
+        <h2 class="section-title" th:text="${p.retired} ? '능력치 (은퇴 시점)' : '능력치'">능력치</h2>
+        <ul class="attr-list">
+            <li th:each="a : ${p.attributeViews}">
+                <span class="attr-label" th:text="${a.label()}">컨택</span>
+                <span class="bar"><span class="bar-fill" th:style="'width:' + ${a.value()} + '%'"></span></span>
+                <span class="attr-value" th:text="${a.value()}">70</span>
+            </li>
+        </ul>
+        <p class="pitch-repertoire" th:if="${p.pitcher}">
+            <span class="muted small">구종</span>
+            <span class="chip" th:each="t : ${p.pitchRepertoire}" th:text="${t.label}">포심</span>
+        </p>
+    </section>
+
     <!-- 메이저 통산 -->
     <section class="card section">
         <h2 class="section-title">메이저리그 통산</h2>
@@ -88,7 +104,7 @@
     </section>
 
     <!-- 은퇴 -->
-    <section class="card section" th:unless="${p.retired}">
+    <section class="card section" th:unless="${p.retired or readOnly == true}">
         <h2 class="section-title">은퇴</h2>
         <p class="muted small">은퇴하면 선수 슬롯이 비고, 기록은 이 화면에 영구 보관됩니다. 되돌릴 수 없어요. (45세가 되면 자동 은퇴)</p>
         <form th:action="@{/players/{id}/retire(id=${p.id})}" method="post" class="ask-form">
@@ -98,7 +114,8 @@
     </section>
 
     <div class="actions">
-        <a class="btn btn-ghost" th:unless="${p.retired}" th:href="@{/players/{id}/season(id=${p.id})}">시즌 화면으로</a>
+        <a class="btn btn-ghost" th:unless="${p.retired or readOnly == true}" th:href="@{/players/{id}/season(id=${p.id})}">시즌 화면으로</a>
+        <a class="btn btn-ghost" th:href="@{/rankings}">랭킹</a>
         <a class="btn btn-ghost" th:href="@{/dashboard}">대시보드</a>
     </div>
 </main>

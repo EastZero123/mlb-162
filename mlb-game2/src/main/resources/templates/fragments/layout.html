@@ -11,6 +11,7 @@
     <a class="brand" th:href="@{/dashboard}">⚾ MLB 선수 키우기</a>
     <div class="header-right" sec:authorize="isAuthenticated()"
          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <a class="nav-link" th:href="@{/rankings}">랭킹</a>
         <span class="who" sec:authentication="principal.nickname">닉네임</span>
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="btn btn-ghost">로그아웃</button>

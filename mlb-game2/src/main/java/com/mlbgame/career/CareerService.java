@@ -1,6 +1,16 @@
 package com.mlbgame.career;
 
+import com.mlbgame.auth.User;
+import com.mlbgame.auth.UserRepository;
 import com.mlbgame.award.Award;
+import com.mlbgame.combine.CombineSummary;
+import com.mlbgame.combine.CombineSummaryRepository;
+import com.mlbgame.player.PlayerNotFoundException;
+import com.mlbgame.player.PlayerRepository;
+import com.mlbgame.ranking.RankingEntry;
+import com.mlbgame.ranking.RankingEntryRepository;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import com.mlbgame.award.AwardService;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
@@ -41,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CareerService {
 
+    static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
     public static final int HALL_OF_FAME = 150;
     public static final int HALL_OF_FAME_CANDIDATE = 100;
     static final int MAJOR_SEASON_SERIES = 27;
@@ -54,11 +65,21 @@ public class CareerService {
     private final TradeService tradeService;
     private final EarningsService earningsService;
     private final TeamRepository teamRepository;
+    private final RankingEntryRepository rankingRepository;
+    private final CombineSummaryRepository combineSummaryRepository;
+    private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
 
     public CareerService(PlayerService playerService, SeasonService seasonService,
                          PlayerSeasonRepository seasonRepository, SeriesRecordRepository seriesRecordRepository,
                          SeriesRecorder seriesRecorder, AwardService awardService, TradeService tradeService,
-                         EarningsService earningsService, TeamRepository teamRepository) {
+                         EarningsService earningsService, TeamRepository teamRepository,
+                         RankingEntryRepository rankingRepository, CombineSummaryRepository combineSummaryRepository,
+                         UserRepository userRepository, PlayerRepository playerRepository) {
+        this.rankingRepository = rankingRepository;
+        this.combineSummaryRepository = combineSummaryRepository;
+        this.userRepository = userRepository;
+        this.playerRepository = playerRepository;
         this.playerService = playerService;
         this.seasonService = seasonService;
         this.seasonRepository = seasonRepository;
@@ -70,7 +91,7 @@ public class CareerService {
         this.teamRepository = teamRepository;
     }
 
-    /** 자발적 은퇴 */
+    /** 자발적 은퇴 → 랭킹 스냅샷 저장 */
     @Transactional
     public Player retire(Long userId, Long playerId) {
         Player player = playerService.getOwned(userId, playerId);
@@ -78,7 +99,31 @@ public class CareerService {
             throw new SeasonProgressException("이미 은퇴한 선수입니다.");
         }
         player.retire();
+        recordRetirement(player);
         return player;
+    }
+
+    /**
+     * 은퇴 순간의 커리어를 랭킹 스냅샷으로 저장 (선수당 1회, 이후 변경 없음). 45세 강제 은퇴에서도 호출한다.
+     */
+    @Transactional
+    public RankingEntry recordRetirement(Player player) {
+        return rankingRepository.findByPlayerId(player.getId()).orElseGet(() -> {
+            Summary summary = summaryOf(player);
+            String nickname = userRepository.findById(player.getUserId()).map(User::getNickname).orElse("-");
+            double combine = combineSummaryRepository.findById(player.getId()).map(CombineSummary::getTotalScore).orElse(0.0);
+            RankingEntry entry = RankingEntry.of(player.getId(), player.getUserId(), nickname, player.getName(),
+                            player.getPosition(), player.getAge(), summary.seasons().size(), LocalDateTime.now(KOREA))
+                    .career(summary.careerEarnings(), summary.hallOfFameScore(), summary.awardPoints(), combine);
+            if (player.isPitcher()) {
+                PitchingLine p = summary.mlbPitching();
+                entry.pitching(p.games, p.outs, p.wins, p.strikeouts, p.saves, p.getEra());
+            } else {
+                BattingLine b = summary.mlbBatting();
+                entry.batting(b.games, b.plateAppearances, b.hits, b.homeRuns, b.getAverage());
+            }
+            return rankingRepository.save(entry);
+        });
     }
 
     public record SeasonRow(PlayerSeason season, Team team, BattingLine batting, PitchingLine pitching) {
@@ -97,7 +142,20 @@ public class CareerService {
 
     @Transactional(readOnly = true)
     public Summary summary(Long userId, Long playerId) {
-        Player player = playerService.getOwned(userId, playerId);
+        return summaryOf(playerService.getOwned(userId, playerId));
+    }
+
+    /** 다른 유저도 볼 수 있는 프로필 — 랭킹에 오른(은퇴한) 선수만 */
+    @Transactional(readOnly = true)
+    public Summary publicSummary(Long playerId) {
+        if (!rankingRepository.existsByPlayerId(playerId)) {
+            throw new PlayerNotFoundException();
+        }
+        return summaryOf(playerRepository.findById(playerId).orElseThrow(PlayerNotFoundException::new));
+    }
+
+    private Summary summaryOf(Player player) {
+        Long playerId = player.getId();
         Map<Long, Team> teams = teamRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(Team::getId, Function.identity()));
 

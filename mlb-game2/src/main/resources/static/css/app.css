@@ -326,6 +326,22 @@ a.btn { text-decoration: none; text-align: center; }
 .highlight-list li { padding: 3px 0; }
 .sub-title { font-size: 14px; margin: 16px 0 6px; }
 
+/* 랭킹 */
+.nav-link { font-size: 14px; font-weight: 600; text-decoration: none; }
+.tab-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.tab-row.wrap { flex-wrap: wrap; }
+.tab {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--surface);
+    font-size: 14px;
+}
+.tab.small { font-size: 13px; padding: 4px 10px; }
+.tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
 /* 계약 */
 .offer-card { border-left: 4px solid var(--primary); }
 .offer-terms { font-size: 18px; margin: 0 0 12px; }

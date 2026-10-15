@@ -1,5 +1,6 @@
 package com.mlbgame.season.transition;
 
+import com.mlbgame.career.CareerService;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
@@ -55,13 +56,15 @@ public class SeasonTransitionService {
     private final PostseasonRepository postseasonRepository;
     private final TeamRepository teamRepository;
     private final ContractService contractService;
+    private final CareerService careerService;
 
     public SeasonTransitionService(PlayerService playerService, SeasonService seasonService,
                                    LeagueWorldService leagueWorldService, StandingsService standingsService,
                                    WorldTeamRepository worldTeamRepository, NpcPlayerRepository npcPlayerRepository,
                                    PostseasonRepository postseasonRepository, TeamRepository teamRepository,
-                                   ContractService contractService) {
+                                   ContractService contractService, CareerService careerService) {
         this.contractService = contractService;
+        this.careerService = careerService;
         this.playerService = playerService;
         this.seasonService = seasonService;
         this.leagueWorldService = leagueWorldService;
@@ -116,6 +119,7 @@ public class SeasonTransitionService {
         boolean retired = player.getAge() >= AgingRules.FORCED_RETIREMENT_AGE;
         if (retired) {
             player.retire();
+            careerService.recordRetirement(player);      // 랭킹 스냅샷
         }
 
         // 계약 (만료·연봉조정·FA·연장 제안)

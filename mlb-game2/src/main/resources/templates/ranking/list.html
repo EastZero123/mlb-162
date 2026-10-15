@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('랭킹')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+    <h1 class="page-title">랭킹</h1>
+    <p class="muted">은퇴한 선수의 커리어가 은퇴 순간 기록으로 올라갑니다. 월간은 이번 달(한국 시간)에 은퇴한 선수만 보여줘요.</p>
+
+    <div class="tab-row">
+        <a th:each="pd : ${periods}" class="tab" th:classappend="${pd == period} ? 'active'"
+           th:href="@{/rankings(category=${category.name()},period=${pd.name()})}" th:text="${pd.label}">전체</a>
+    </div>
+    <div class="tab-row wrap">
+        <a th:each="c : ${categories}" class="tab small" th:classappend="${c == category} ? 'active'"
+           th:href="@{/rankings(category=${c.name()},period=${period.name()})}" th:text="${c.label}">누적 연봉</a>
+    </div>
+
+    <section class="card section">
+        <h2 class="section-title" th:text="${period.label} + ' · ' + ${category.label}">전체 · 커리어 누적 연봉</h2>
+        <p class="muted small" th:if="${category.name() == 'AVG'}">통산 1,500타석 이상</p>
+        <p class="muted small" th:if="${category.name() == 'ERA'}">통산 450이닝 이상</p>
+        <p class="muted" th:if="${#lists.isEmpty(rows)}">아직 기록이 없습니다. 은퇴한 선수가 생기면 여기에 올라와요.</p>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(rows)}">
+            <table class="stat-table">
+                <thead>
+                <tr><th>순위</th><th class="left">선수</th><th class="left">구단주</th><th>포지션</th><th>시즌</th><th>은퇴</th>
+                    <th th:text="${category.label}">값</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${rows}" th:classappend="${r.entry().userId == myUserId} ? 'my-team'">
+                    <td th:text="${r.rank()}">1</td>
+                    <td class="left">
+                        <a th:href="@{/profiles/{id}(id=${r.entry().playerId})}" th:text="${r.entry().playerName}">선수</a>
+                    </td>
+                    <td class="left" th:text="${r.entry().nickname}">닉네임</td>
+                    <td th:text="${r.entry().position.shortName}">SS</td>
+                    <td th:text="${r.entry().seasons}">15</td>
+                    <td th:text="${r.entry().finalAge} + '세 · ' + ${#temporals.format(r.entry().retiredAt, 'yyyy.MM.dd')}">40세</td>
+                    <td>
+                        <strong th:switch="${category.name()}">
+                            <span th:case="'EARNINGS'" th:text="${@fmt.money(r.entry().careerEarnings)}">$0</span>
+                            <span th:case="'AVG'" th:text="${@fmt.rate(r.value())}">.300</span>
+                            <span th:case="'ERA'" th:text="${@fmt.two(r.value())}">3.00</span>
+                            <span th:case="'COMBINE'" th:text="${@fmt.one(r.value())}">50.0</span>
+                            <span th:case="*" th:text="${#numbers.formatInteger(r.value(), 1, 'COMMA')}">0</span>
+                        </strong>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
