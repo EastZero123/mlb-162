@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('시즌 기록')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+    <h1 class="page-title">
+        <span th:text="${player.name}">선수</span> ·
+        <span th:text="${season.seasonYear} + ' 시즌 기록'">2026 시즌 기록</span>
+    </h1>
+    <p class="muted">
+        <span th:text="${@fmt.teamName(player.team, season.leagueLevel)}">팀</span> ·
+        <span th:text="${season.seriesPlayed} + ' / 54 시리즈'">진행</span> ·
+        팀 <span th:text="${season.teamWins} + '승 ' + ${season.teamLosses} + '패'">0승 0패</span> ·
+        커리어 수령액 <strong th:text="${@fmt.money(careerEarnings)}">$0</strong>
+    </p>
+
+    <!-- 타자 -->
+    <section class="card section" th:unless="${player.pitcher}">
+        <h2 class="section-title">타격</h2>
+        <div class="table-wrap">
+            <table class="stat-table">
+                <thead>
+                <tr><th>G</th><th>PA</th><th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th>
+                    <th>BB</th><th>SO</th><th>SB</th><th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th>득점권</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td th:text="${batting.games}">0</td>
+                    <td th:text="${batting.plateAppearances}">0</td>
+                    <td th:text="${batting.atBats}">0</td>
+                    <td th:text="${batting.hits}">0</td>
+                    <td th:text="${batting.doubles}">0</td>
+                    <td th:text="${batting.triples}">0</td>
+                    <td th:text="${batting.homeRuns}">0</td>
+                    <td th:text="${batting.runs}">0</td>
+                    <td th:text="${batting.rbi}">0</td>
+                    <td th:text="${batting.walks}">0</td>
+                    <td th:text="${batting.strikeouts}">0</td>
+                    <td th:text="${batting.stolenBases}">0</td>
+                    <td th:text="${@fmt.rate(batting.average)}">.000</td>
+                    <td th:text="${@fmt.rate(batting.obp)}">.000</td>
+                    <td th:text="${@fmt.rate(batting.slg)}">.000</td>
+                    <td th:text="${@fmt.rate(batting.ops)}">.000</td>
+                    <td th:text="${@fmt.rate(batting.rispAverage)}">.000</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <h3 class="sub-title">수비</h3>
+        <p class="muted small">
+            타구 처리 기회 <strong th:text="${fielding.chances}">0</strong> ·
+            막은 안타 <strong th:text="${fielding.hitsSaved}">0</strong> ·
+            놓친 타구 <strong th:text="${fielding.hitsAllowed}">0</strong> ·
+            실책 <strong th:text="${fielding.errors}">0</strong> ·
+            보살 <strong th:text="${fielding.assists}">0</strong> ·
+            막은 실점 <strong th:text="${@fmt.one(fielding.runsSaved)}">0.0</strong>
+            <th:block th:if="${player.position.name() == 'C'}">
+                · 도루 저지 <strong th:text="${fielding.caughtStealing} + '/' + ${fielding.caughtStealing + fielding.stolenBasesAgainst}">0/0</strong>
+            </th:block>
+        </p>
+    </section>
+
+    <!-- 투수 -->
+    <section class="card section" th:if="${player.pitcher}">
+        <h2 class="section-title">투구</h2>
+        <div class="table-wrap">
+            <table class="stat-table">
+                <thead>
+                <tr><th>G</th><th>GS</th><th>W</th><th>L</th><th>SV</th><th>BS</th><th>IP</th><th>H</th><th>R</th>
+                    <th>BB</th><th>SO</th><th>HR</th><th>ERA</th><th>WHIP</th><th>K/9</th><th>BB/9</th><th>QS</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td th:text="${pitching.games}">0</td>
+                    <td th:text="${pitching.gamesStarted}">0</td>
+                    <td th:text="${pitching.wins}">0</td>
+                    <td th:text="${pitching.losses}">0</td>
+                    <td th:text="${pitching.saves}">0</td>
+                    <td th:text="${pitching.blownSaves}">0</td>
+                    <td th:text="${pitching.innings}">0.0</td>
+                    <td th:text="${pitching.hits}">0</td>
+                    <td th:text="${pitching.runs}">0</td>
+                    <td th:text="${pitching.walks}">0</td>
+                    <td th:text="${pitching.strikeouts}">0</td>
+                    <td th:text="${pitching.homeRuns}">0</td>
+                    <td th:text="${@fmt.two(pitching.era)}">0.00</td>
+                    <td th:text="${@fmt.two(pitching.whip)}">0.00</td>
+                    <td th:text="${@fmt.two(pitching.strikeoutsPerNine)}">0.00</td>
+                    <td th:text="${@fmt.two(pitching.walksPerNine)}">0.00</td>
+                    <td th:text="${pitching.qualityStarts}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card section">
+        <h2 class="section-title">시리즈 기록</h2>
+        <p class="muted small" th:if="${#lists.isEmpty(log)}">아직 진행한 시리즈가 없습니다.</p>
+        <div class="table-wrap" th:unless="${#lists.isEmpty(log)}">
+            <table class="stat-table log-table">
+                <thead><tr><th>#</th><th>월</th><th>상대</th><th>결과</th><th>내 기록</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="row : ${log}">
+                    <td th:text="${row.record().seriesNo}">1</td>
+                    <td th:text="${row.matchup().series().month()} + '월'">4월</td>
+                    <td class="left">
+                        <span th:text="${row.matchup().series().home()} ? 'vs' : '@'">vs</span>
+                        <span th:text="${@fmt.teamName(row.matchup().opponent(), season.leagueLevel)}">상대</span>
+                    </td>
+                    <td th:text="${row.record().wins} + '-' + ${row.record().losses}">2-1</td>
+                    <td class="left" th:text="${row.mySummary()}">4타수 2안타</td>
+                    <td><a th:href="@{/players/{id}/season/series/{no}(id=${player.id},no=${row.record().seriesNo})}">상세</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card section">
+        <h2 class="section-title" th:text="'수상 내역 (' + ${#lists.size(awards)} + ')'">수상 내역</h2>
+        <p class="muted small" th:if="${#lists.isEmpty(awards)}">아직 수상 내역이 없습니다. 월간·시즌 시상에서 상을 받으면 스탯업 포인트가 쌓여요.</p>
+        <ul class="schedule-list" th:unless="${#lists.isEmpty(awards)}">
+            <li th:each="aw : ${awards}">
+                <span>🏆</span>
+                <strong th:text="${aw.title}">2026 MVP</strong>
+                <small class="muted" th:text="'포인트 +' + ${aw.points} + ' · ' + ${@fmt.money(aw.bonus)}">+5</small>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card section" th:unless="${#lists.isEmpty(levelHistory)}">
+        <h2 class="section-title">승격·강등 이력</h2>
+        <ul class="schedule-list">
+            <li th:each="c : ${levelHistory}">
+                <span class="muted" th:text="${c.seasonYear} + '시즌 ' + ${c.afterSeries} + '번째 시리즈 후'">2026시즌</span>
+                <span th:text="${c.fromLevel.label} + ' → ' + ${c.toLevel.label}">루키 → 싱글A</span>
+                <span class="badge" th:classappend="${c.promotion} ? 'badge-win' : 'badge-lose'"
+                      th:text="${c.promotion} ? '승격' : '강등'">승격</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card section">
+        <h2 class="section-title" th:text="'훈련 기록 (' + ${#lists.size(trainings)} + '회)'">훈련 기록</h2>
+        <p class="muted small" th:if="${#lists.isEmpty(trainings)}">아직 훈련 기록이 없습니다.</p>
+        <p class="pitch-repertoire" th:unless="${#lists.isEmpty(trainings)}">
+            <span class="chip" th:each="t : ${trainings}"
+                  th:text="${t.seriesNo} + '. ' + ${t.attribute.label} + ' ' + ${t.valueAfter}">1. 컨택 41</span>
+        </p>
+    </section>
+
+    <div class="actions">
+        <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}">시즌 진행으로</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}(id=${player.id})}">선수 정보</a>
+    </div>
+</main>
+</body>
+</html>

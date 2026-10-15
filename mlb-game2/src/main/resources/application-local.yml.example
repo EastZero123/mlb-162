@@ -1,0 +1,8 @@
+# 이 파일을 application-local.yml 로 복사한 뒤 빈칸을 채워 주세요. (application-local.yml 은 git 에서 제외됨)
+# DB 와 계정은 scripts/create-database.sql 로 미리 만들어 둡니다.
+spring:
+  datasource:
+    # 예) jdbc:mysql://localhost:3306/mlb_game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://:3306/mlb_game?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username:
+    password:

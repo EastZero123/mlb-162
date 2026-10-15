@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('선수 생성')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow">
+    <h1 class="page-title">선수 생성</h1>
+    <p class="muted">
+        모든 능력치는 기본값(고졸 <span th:text="${highSchoolStart}">25</span> / 대졸 <span th:text="${collegeStart}">35</span>)에서
+        시작하고, <strong th:text="${allocationPoints}">55</strong>포인트를 원하는 능력치에 자유롭게 배분해요. 랜덤은 없습니다.
+    </p>
+    <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <form th:action="@{/players}" th:object="${form}" method="post" class="card form form-card" novalidate>
+        <label for="name">이름</label>
+        <input type="text" th:field="*{name}" placeholder="한글·영문 2~20자"
+               th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
+        <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+
+        <label for="uniformNumber">등번호</label>
+        <input type="number" min="0" max="99" th:field="*{uniformNumber}"
+               th:classappend="${#fields.hasErrors('uniformNumber')} ? 'invalid'">
+        <p class="field-error" th:if="${#fields.hasErrors('uniformNumber')}" th:errors="*{uniformNumber}"></p>
+
+        <label for="position">포지션</label>
+        <select th:field="*{position}" th:classappend="${#fields.hasErrors('position')} ? 'invalid'">
+            <option value="">선택</option>
+            <option th:each="p : ${positions}" th:value="${p.name()}" th:attr="data-pitcher=${p.pitcher}"
+                    th:text="${p.shortName + ' · ' + p.label}">SS · 유격수</option>
+        </select>
+        <p class="field-error" th:if="${#fields.hasErrors('position')}" th:errors="*{position}"></p>
+
+        <div class="form-row">
+            <div>
+                <label for="throwsHand">던지는 손</label>
+                <select th:field="*{throwsHand}">
+                    <option value="">선택</option>
+                    <option th:each="h : ${throwHands}" th:value="${h.name()}" th:text="${h.label + '투'}">우투</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('throwsHand')}" th:errors="*{throwsHand}"></p>
+                <p class="field-error" th:if="${#fields.hasErrors('throwsHandValid')}" th:errors="*{throwsHandValid}"></p>
+            </div>
+            <div>
+                <label for="bats">타석</label>
+                <select th:field="*{bats}">
+                    <option value="">선택</option>
+                    <option th:each="h : ${batHands}" th:value="${h.name()}" th:text="${h.label + '타'}">우타</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('bats')}" th:errors="*{bats}"></p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label for="nationality">국적</label>
+                <select th:field="*{nationality}" th:classappend="${#fields.hasErrors('nationality')} ? 'invalid'">
+                    <option value="">선택</option>
+                    <option th:each="n : ${nationalities}" th:value="${n.name()}" th:text="${n.label}">미국</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></p>
+            </div>
+            <div>
+                <label for="schoolRegion">출신 학교 지역</label>
+                <select th:field="*{schoolRegion}" th:classappend="${#fields.hasErrors('schoolRegion')} ? 'invalid'">
+                    <option value="">선택</option>
+                    <option th:each="r : ${schoolRegions}" th:value="${r.name()}" th:text="${r.label}">미국 동부</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('schoolRegion')}" th:errors="*{schoolRegion}"></p>
+            </div>
+        </div>
+
+        <fieldset class="choice-group">
+            <legend>학력</legend>
+            <label class="choice" th:each="e : ${educations}">
+                <input type="radio" th:field="*{education}" th:value="${e.name()}">
+                <span>
+                    <strong th:text="${e.label + ' (' + e.startAge + '세)'}">고졸 (18세)</strong>
+                    <small th:text="${e.name() == 'HIGH_SCHOOL'} ? '능력치 30 시작 · 성장 기간이 김' : '능력치 40 시작 · 상위 리그에서 출발'"></small>
+                </span>
+            </label>
+            <p class="field-error" th:if="${#fields.hasErrors('education')}" th:errors="*{education}"></p>
+        </fieldset>
+
+        <fieldset class="choice-group" id="pitch-fields">
+            <legend>구종 (포심 + 3개 선택)</legend>
+            <p class="muted small">포심은 기본 구종입니다. 나머지 3개를 서로 다르게 골라 주세요.
+                구종은 선수의 스타일(하이라이트 연출)이고 능력치에는 영향을 주지 않아요.</p>
+            <div class="form-row three">
+                <select th:field="*{pitch2}">
+                    <option value="">구종 2</option>
+                    <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">슬라이더</option>
+                </select>
+                <select th:field="*{pitch3}">
+                    <option value="">구종 3</option>
+                    <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">커브</option>
+                </select>
+                <select th:field="*{pitch4}">
+                    <option value="">구종 4</option>
+                    <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">체인지업</option>
+                </select>
+            </div>
+            <p class="field-error" th:if="${#fields.hasErrors('pitchSelectionValid')}" th:errors="*{pitchSelectionValid}"></p>
+        </fieldset>
+
+        <fieldset class="choice-group allocation" id="allocation"
+                  th:attr="data-points=${allocationPoints},data-max=${allocationMax},data-hs-start=${highSchoolStart},data-college-start=${collegeStart}">
+            <legend>능력치 배분</legend>
+            <p class="allocation-status">
+                남은 포인트 <strong id="remaining" th:text="${allocationPoints}">55</strong>
+                / <span th:text="${allocationPoints}">55</span>
+                <small class="muted">· 능력치당 최대 +<span th:text="${allocationMax}">25</span> · OVR <strong id="ovr-preview">-</strong></small>
+            </p>
+            <p class="muted small" id="allocation-hint">포지션과 학력을 먼저 고르면 배분할 수 있어요.</p>
+            <p class="field-error" th:if="${#fields.hasErrors('allocation*')}" th:errors="*{allocation*}"></p>
+
+            <ul class="alloc-list" data-group="hitter">
+                <li th:each="a : ${hitterAttributes}">
+                    <span class="attr-label">
+                        <span th:text="${a.label}">컨택</span>
+                        <small class="attr-desc" th:text="${a.description}">설명</small>
+                    </span>
+                    <span class="stepper">
+                        <button type="button" class="step" data-step="-1" aria-label="감소">−</button>
+                        <input type="number" min="0" th:max="${allocationMax}" class="alloc-input"
+                               th:name="'allocation[' + ${a.name()} + ']'" th:value="${form.allocation.get(a) ?: 0}">
+                        <button type="button" class="step" data-step="1" aria-label="증가">+</button>
+                    </span>
+                    <span class="attr-value alloc-total">-</span>
+                </li>
+            </ul>
+            <ul class="alloc-list" data-group="pitcher">
+                <li th:each="a : ${pitcherAttributes}">
+                    <span class="attr-label">
+                        <span th:text="${a.label}">구속</span>
+                        <small class="attr-desc" th:text="${a.description}">설명</small>
+                    </span>
+                    <span class="stepper">
+                        <button type="button" class="step" data-step="-1" aria-label="감소">−</button>
+                        <input type="number" min="0" th:max="${allocationMax}" class="alloc-input"
+                               th:name="'allocation[' + ${a.name()} + ']'" th:value="${form.allocation.get(a) ?: 0}">
+                        <button type="button" class="step" data-step="1" aria-label="증가">+</button>
+                    </span>
+                    <span class="attr-value alloc-total">-</span>
+                </li>
+            </ul>
+            <button type="button" class="btn btn-ghost small" id="alloc-even">고르게 배분 (각 +5)</button>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">선수 생성하고 컴바인으로</button>
+    </form>
+</main>
+<script>
+    (function () {
+        const position = document.getElementById('position');
+        const pitchFields = document.getElementById('pitch-fields');
+        const box = document.getElementById('allocation');
+        const POINTS = Number(box.dataset.points);
+        const MAX = Number(box.dataset.max);
+        const START = { HIGH_SCHOOL: Number(box.dataset.hsStart), COLLEGE: Number(box.dataset.collegeStart) };
+        const remainingEl = document.getElementById('remaining');
+        const ovrEl = document.getElementById('ovr-preview');
+        const hint = document.getElementById('allocation-hint');
+        const submitBtn = document.getElementById('submit-btn');
+
+        function isPitcher() {
+            const option = position.options[position.selectedIndex];
+            return !!(option && option.dataset.pitcher === 'true');
+        }
+        function education() {
+            const checked = document.querySelector('input[name="education"]:checked');
+            return checked ? checked.value : null;
+        }
+        function activeGroup() {
+            return box.querySelector('.alloc-list[data-group="' + (isPitcher() ? 'pitcher' : 'hitter') + '"]');
+        }
+        function clamp(v) {
+            v = Math.floor(Number(v) || 0);
+            return Math.max(0, Math.min(MAX, v));
+        }
+
+        function render() {
+            const pitcher = isPitcher();
+            pitchFields.hidden = !pitcher;
+            const ready = position.value !== '' && education() !== null;
+            hint.hidden = ready;
+
+            box.querySelectorAll('.alloc-list').forEach(function (list) {
+                const active = ready && list === activeGroup();
+                list.hidden = !active;
+                // 숨긴 그룹은 전송하지 않음
+                list.querySelectorAll('input').forEach(function (input) { input.disabled = !active; });
+            });
+            if (!ready) {
+                remainingEl.textContent = POINTS;
+                ovrEl.textContent = '-';
+                return;
+            }
+
+            const base = START[education()];
+            let used = 0;
+            let sum = 0;
+            const rows = activeGroup().querySelectorAll('li');
+            rows.forEach(function (li) {
+                const input = li.querySelector('input');
+                const v = clamp(input.value);
+                used += v;
+                sum += base + v;
+                li.querySelector('.alloc-total').textContent = base + v;
+            });
+            const remaining = POINTS - used;
+            remainingEl.textContent = remaining;
+            remainingEl.classList.toggle('over', remaining < 0);
+            ovrEl.textContent = (Math.round(sum / rows.length * 10) / 10).toFixed(1);
+            submitBtn.disabled = remaining !== 0;
+        }
+
+        box.addEventListener('click', function (e) {
+            const btn = e.target.closest('.step');
+            if (!btn) return;
+            const input = btn.parentElement.querySelector('input');
+            const used = Array.from(activeGroup().querySelectorAll('input'))
+                .reduce(function (s, i) { return s + clamp(i.value); }, 0);
+            const step = Number(btn.dataset.step);
+            if (step > 0 && used >= POINTS) return;
+            input.value = clamp(clamp(input.value) + step);
+            render();
+        });
+        box.addEventListener('input', function (e) {
+            if (e.target.classList.contains('alloc-input')) render();
+        });
+        box.addEventListener('change', function (e) {
+            if (e.target.classList.contains('alloc-input')) {
+                e.target.value = clamp(e.target.value);
+                render();
+            }
+        });
+        document.getElementById('alloc-even').addEventListener('click', function () {
+            const inputs = activeGroup() ? activeGroup().querySelectorAll('input') : [];
+            const each = Math.floor(POINTS / Math.max(1, inputs.length));
+            inputs.forEach(function (i) { i.value = each; });
+            render();
+        });
+        position.addEventListener('change', render);
+        document.querySelectorAll('input[name="education"]').forEach(function (r) {
+            r.addEventListener('change', render);
+        });
+        render();
+    })();
+</script>
+</body>
+</html>

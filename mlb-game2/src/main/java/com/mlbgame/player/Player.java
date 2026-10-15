@@ -1,0 +1,407 @@
+package com.mlbgame.player;
+
+import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.contract.ContractType;
+import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.Team;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.MapKeyEnumerated;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.MapKeyJdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+@Entity
+@Table(name = "players")
+public class Player extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(nullable = false, length = 20)
+    private String name;
+
+    @Column(name = "uniform_number", nullable = false)
+    private int uniformNumber;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 5)
+    private Position position;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "bats_hand", nullable = false, length = 5)
+    private Hand bats;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "throws_hand", nullable = false, length = 5)
+    private Hand throwsHand;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
+    private Education education;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 10)
+    private Nationality nationality;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "school_region", nullable = false, length = 20)
+    private SchoolRegion schoolRegion;
+
+    @Column(nullable = false)
+    private int age;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
+    private PlayerStage stage;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
+    private PlayerStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "league_level", length = 10)
+    private LeagueLevel leagueLevel;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "team_id")
+    private Team team;
+
+    // 선수당 11행뿐이라 EAGER 로 함께 읽는다 (open-in-view=false 에서 화면 렌더링 시 지연 로딩 예외 방지)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "player_attributes", joinColumns = @JoinColumn(name = "player_id"))
+    @MapKeyEnumerated(EnumType.STRING)
+    @MapKeyJdbcTypeCode(SqlTypes.VARCHAR)
+    @MapKeyColumn(name = "attr_code", length = 30)
+    @Column(name = "attr_value", nullable = false)
+    private Map<Attribute, Integer> attributes = new EnumMap<>(Attribute.class);
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "player_pitches", joinColumns = @JoinColumn(name = "player_id"))
+    @MapKeyColumn(name = "slot")
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "pitch_type", nullable = false, length = 20)
+    private Map<Integer, PitchType> pitches = new HashMap<>();
+
+    /** 메이저 계약 연봉 (달러/년). 마이너 계약이면 0 */
+    @Column(nullable = false)
+    private long salary;
+
+    /** 남은 계약 연수 (이번 시즌 포함) */
+    @Column(name = "contract_years", nullable = false)
+    private int contractYears;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "contract_type", nullable = false, length = 20)
+    private ContractType contractType = ContractType.NONE;
+
+    /** 보유 스탯업 포인트 (시상으로 적립, 시즌 넘어 이월) */
+    @Column(name = "stat_points", nullable = false)
+    private int statPoints;
+
+    @Version
+    private Long version;
+
+    protected Player() {
+    }
+
+    /** 새 계약 (FA 이적이면 구단도 바뀐다) */
+    public void signContract(Team team, long salary, int years, ContractType type) {
+        if (team != null) {
+            this.team = team;
+        }
+        this.salary = salary;
+        this.contractYears = years;
+        this.contractType = type;
+    }
+
+    /** 트레이드: 계약은 그대로, 구단만 바뀐다 (레벨 유지) */
+    public void tradeTo(Team newTeam) {
+        requireStage(PlayerStage.DRAFTED);
+        this.team = newTeam;
+    }
+
+    /** 다년 계약 1년 경과 */
+    public void passContractYear() {
+        this.contractYears = Math.max(0, contractYears - 1);
+    }
+
+    public long getSalary() {
+        return salary;
+    }
+
+    public int getContractYears() {
+        return contractYears;
+    }
+
+    public ContractType getContractType() {
+        return contractType;
+    }
+
+    public void addStatPoints(int points) {
+        this.statPoints += points;
+    }
+
+    /** 포인트 1개를 써서 능력치 +1 */
+    public int spendStatPoint(Attribute attribute) {
+        if (statPoints <= 0) {
+            throw new IllegalStateException("보유한 스탯업 포인트가 없습니다.");
+        }
+        int value = train(attribute);
+        statPoints--;
+        return value;
+    }
+
+    public int getStatPoints() {
+        return statPoints;
+    }
+
+    /**
+     * 새 선수 생성. 능력치 = 학력별 기본값(모두 동일) + 유저가 자유 배분한 포인트. 랜덤 없음.
+     * 배분 규칙(총량·능력치당 한도) 검증은 {@link PlayerService} 가 먼저 한다.
+     *
+     * @param allocation     능력치별 배분 포인트 (없는 능력치는 0)
+     * @param pitchSelection 투수일 때 포심 외에 고른 구종 3개 (슬롯 2~4로 저장, 야수는 빈 리스트)
+     */
+    public static Player create(Long userId, String name, int uniformNumber, Position position, Hand bats,
+                                Hand throwsHand, Nationality nationality, Education education,
+                                SchoolRegion schoolRegion, int startValue, Map<Attribute, Integer> allocation,
+                                List<PitchType> pitchSelection) {
+        Player player = new Player();
+        player.userId = userId;
+        player.name = name;
+        player.uniformNumber = uniformNumber;
+        player.position = position;
+        player.bats = bats;
+        player.throwsHand = throwsHand;
+        player.nationality = nationality;
+        player.education = education;
+        player.schoolRegion = schoolRegion;
+        player.age = education.getStartAge();
+        player.stage = PlayerStage.CREATED;
+        player.status = PlayerStatus.ACTIVE;
+        for (Attribute attribute : Attribute.forPosition(position)) {
+            player.attributes.put(attribute, startValue + allocation.getOrDefault(attribute, 0));
+        }
+        if (position.isPitcher()) {
+            for (int i = 0; i < pitchSelection.size(); i++) {
+                player.pitches.put(i + 2, pitchSelection.get(i));
+            }
+        }
+        return player;
+    }
+
+    public void completeCombine() {
+        requireStage(PlayerStage.CREATED);
+        this.stage = PlayerStage.COMBINE_DONE;
+    }
+
+    public void draft(Team team, LeagueLevel startLevel) {
+        requireStage(PlayerStage.COMBINE_DONE);
+        this.team = team;
+        this.leagueLevel = startLevel;
+        this.stage = PlayerStage.DRAFTED;
+    }
+
+    /** 시즌 전환: 나이 +1 */
+    public void ageOneYear() {
+        this.age++;
+    }
+
+    /** 노화 하락 적용 (최소 1) */
+    public void applyAging(Map<Attribute, Integer> deltas) {
+        deltas.forEach((attribute, delta) -> attributes.computeIfPresent(attribute,
+                (a, value) -> Math.max(Attribute.MIN, value + delta)));
+    }
+
+    /** 은퇴: 슬롯을 반납하고 기록은 보관 */
+    public void retire() {
+        this.status = PlayerStatus.RETIRED;
+    }
+
+    public boolean isRetired() {
+        return status == PlayerStatus.RETIRED;
+    }
+
+    /** 승격·강등으로 소속 레벨 변경 (같은 구단 안에서) */
+    public void moveToLevel(LeagueLevel level) {
+        requireStage(PlayerStage.DRAFTED);
+        this.leagueLevel = level;
+    }
+
+    /** 훈련: 고른 능력치 1개를 확정 +1 (랜덤 없음). 포지션 능력치가 아니거나 이미 100이면 불가 */
+    public int train(Attribute attribute) {
+        if (!canTrain(attribute)) {
+            throw new IllegalArgumentException(attribute.getLabel() + "은(는) 훈련할 수 없습니다.");
+        }
+        int value = attributes.get(attribute) + 1;
+        attributes.put(attribute, value);
+        return value;
+    }
+
+    public boolean canTrain(Attribute attribute) {
+        Integer value = attributes.get(attribute);
+        return value != null && value < Attribute.MAX;
+    }
+
+    public void requireStage(PlayerStage expected) {
+        if (stage != expected) {
+            throw new InvalidStageException("현재 단계(" + stage + ")에서는 진행할 수 없습니다.");
+        }
+    }
+
+    public int attribute(Attribute attribute) {
+        Integer value = attributes.get(attribute);
+        if (value == null) {
+            throw new IllegalArgumentException(position + " 포지션은 " + attribute + " 능력치가 없습니다.");
+        }
+        return value;
+    }
+
+    /** OVR = 포지션 능력치 11개의 단순 평균 (소수 첫째 자리) */
+    public double getOverall() {
+        double avg = Attribute.forPosition(position).stream()
+                .mapToInt(this::attribute)
+                .average()
+                .orElse(0);
+        return Math.round(avg * 10) / 10.0;
+    }
+
+    /** 화면 표시용 능력치 목록 */
+    public List<AttributeView> getAttributeViews() {
+        return Attribute.forPosition(position).stream()
+                .map(a -> new AttributeView(a, a.getLabel(), attribute(a)))
+                .toList();
+    }
+
+    /**
+     * 투수의 구종 목록 (포심 + 생성 시 고른 3개). 능력치가 아닌 캐릭터 설정으로,
+     * 하이라이트 문구 연출에만 쓴다. 야수는 빈 리스트.
+     */
+    public List<PitchType> getPitchRepertoire() {
+        if (!isPitcher()) {
+            return List.of();
+        }
+        List<PitchType> repertoire = new ArrayList<>();
+        repertoire.add(PitchType.FOUR_SEAM);
+        pitches.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> repertoire.add(e.getValue()));
+        return repertoire;
+    }
+
+    public boolean isPitcher() {
+        return position.isPitcher();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getUniformNumber() {
+        return uniformNumber;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public Hand getBats() {
+        return bats;
+    }
+
+    public Hand getThrowsHand() {
+        return throwsHand;
+    }
+
+    public Education getEducation() {
+        return education;
+    }
+
+    public Nationality getNationality() {
+        return nationality;
+    }
+
+    public SchoolRegion getSchoolRegion() {
+        return schoolRegion;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    /** 소속 팀 표시명. 마이너리그는 산하팀 실명 대신 "디트로이트 타이거스 AA" 처럼 레벨을 붙인다 */
+    public String getTeamDisplayName() {
+        if (team == null) {
+            return null;
+        }
+        return leagueLevel == null || leagueLevel.getTeamSuffix().isEmpty()
+                ? team.getNameKo()
+                : team.getNameKo() + " " + leagueLevel.getTeamSuffix();
+    }
+
+    public PlayerStage getStage() {
+        return stage;
+    }
+
+    public PlayerStatus getStatus() {
+        return status;
+    }
+
+    public LeagueLevel getLeagueLevel() {
+        return leagueLevel;
+    }
+
+    public Team getTeam() {
+        return team;
+    }
+
+    /** "우투좌타" 형식 */
+    public String getHandLabel() {
+        return throwsHand.getLabel() + "투" + bats.getLabel() + "타";
+    }
+
+    public record AttributeView(Attribute attribute, String label, int value) {
+    }
+}

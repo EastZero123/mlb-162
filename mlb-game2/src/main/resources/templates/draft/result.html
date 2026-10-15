@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('드래프트 결과')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow reveal-all">
+    <section class="card draft-card reveal" th:style="'border-top-color:' + ${draft.team.primaryColor}">
+        <p class="muted">
+            <span th:text="${draft.round}">1</span>라운드 <span th:text="${draft.pickInRound}">5</span>번
+            (전체 <span th:text="${draft.overallPick}">5</span>순위)
+        </p>
+        <p class="draft-team" th:style="'color:' + ${draft.team.primaryColor}" th:text="${draft.team.nameKo}">팀</p>
+        <p class="muted" th:text="${draft.team.name + ' · ' + draft.team.league + ' ' + draft.team.division}">팀 영문</p>
+        <p class="draft-line">
+            <strong th:text="${player.name}">선수</strong>,
+            <span th:text="${player.position.label}">유격수</span>로 지명!
+        </p>
+        <dl class="draft-facts">
+            <div>
+                <dt>계약금</dt>
+                <dd th:text="'$' + ${#numbers.formatInteger(draft.signingBonus, 1, 'COMMA')}">$1,000,000</dd>
+            </div>
+            <div>
+                <dt>시작 팀</dt>
+                <dd th:text="${player.teamDisplayName}">디트로이트 타이거스 루키</dd>
+            </div>
+            <div>
+                <dt>OVR</dt>
+                <dd th:text="${#numbers.formatDecimal(player.overall, 1, 1)}">30.0</dd>
+            </div>
+        </dl>
+        <div class="actions">
+            <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}">2026 시즌 시작</a>
+            <a class="btn btn-ghost" th:href="@{/players/{id}(id=${player.id})}">선수 정보 보기</a>
+            <a class="btn btn-ghost" th:href="@{/dashboard}">대시보드</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

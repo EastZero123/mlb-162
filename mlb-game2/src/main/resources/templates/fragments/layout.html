@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | MLB 선수 키우기'">MLB 선수 키우기</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header th:fragment="header" class="site-header">
+    <a class="brand" th:href="@{/dashboard}">⚾ MLB 선수 키우기</a>
+    <div class="header-right" sec:authorize="isAuthenticated()"
+         xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <span class="who" sec:authentication="principal.nickname">닉네임</span>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-ghost">로그아웃</button>
+        </form>
+    </div>
+</header>
+</body>
+</html>

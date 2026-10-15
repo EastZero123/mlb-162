@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('포스트시즌')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container" th:with="myTeam=${player.team.id}">
+    <h1 class="page-title" th:text="${postseason.seasonYear} + ' 포스트시즌'">2026 포스트시즌</h1>
+    <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <!-- 상태 -->
+    <section class="card section">
+        <p th:if="${!postseason.userTeamQualified}">
+            <strong th:text="${player.team.nameKo}">팀</strong>은(는) 포스트시즌 진출에 실패했습니다. 다른 팀들의 결과만 확인할 수 있어요.
+        </p>
+        <p th:if="${postseason.userTeamQualified and !postseason.userPlays}">
+            <strong th:text="${player.team.nameKo}">팀</strong>이(가) 진출했지만, 내 선수는 메이저 로스터가 아니거나 부상이라 출전하지 않습니다.
+        </p>
+        <p th:if="${postseason.userPlays}">
+            <strong th:text="${player.team.nameKo}">팀</strong>이(가) 포스트시즌에 진출했습니다! 라운드마다 직접 경기에 나섭니다.
+        </p>
+        <div class="award-banner" th:if="${postseason.done and postseason.championTeamId != null}">
+            <span class="award-icon">🏆</span>
+            <strong th:text="${teams[postseason.championTeamId].nameKo} + ' 월드시리즈 우승!'">우승</strong>
+            <span th:if="${postseason.championTeamId == myTeam}">내 팀이 정상에 올랐습니다!</span>
+        </div>
+        <div class="award-banner" th:each="aw : ${awards}">
+            <span class="award-icon">🏅</span>
+            <strong th:text="${aw.title}">MVP</strong>
+            <span th:text="'스탯업 포인트 +' + ${aw.points} + ' · 보너스 ' + ${@fmt.money(aw.bonus)}">+2</span>
+        </div>
+        <form th:if="${nextRound != null}" th:action="@{/players/{id}/postseason/play(id=${player.id})}" method="post">
+            <button type="submit" class="btn btn-primary" th:text="${nextRound.label} + ' 진행'">와일드카드 시리즈 진행</button>
+        </form>
+    </section>
+
+    <!-- 대진 -->
+    <section class="card section" th:each="r : ${rounds}" th:if="${!#lists.isEmpty(bracket.round(r.number))}">
+        <h2 class="section-title" th:text="${r.label} + ' (' + ${r.winsNeeded()} + '선승)'">와일드카드</h2>
+        <div class="bracket-grid">
+            <div class="bracket-series" th:each="s : ${bracket.round(r.number)}"
+                 th:classappend="${s.userTeam} ? 'my-series'">
+                <small class="muted" th:text="${s.league == 'WS'} ? '월드시리즈' : (${s.league == 'AL'} ? '아메리칸리그' : '내셔널리그')">AL</small>
+                <div class="bracket-row" th:classappend="${s.winnerId != null and s.winnerId == s.highTeamId} ? 'winner'">
+                    <span th:text="${s.highSeed} + '. ' + ${teams[s.highTeamId].nameKo}">1. 팀</span>
+                    <strong th:text="${s.highWins}">0</strong>
+                </div>
+                <div class="bracket-row" th:classappend="${s.winnerId != null and s.winnerId == s.lowTeamId} ? 'winner'">
+                    <span th:text="${s.lowSeed} + '. ' + ${teams[s.lowTeamId].nameKo}">4. 팀</span>
+                    <strong th:text="${s.lowWins}">0</strong>
+                </div>
+                <small class="muted" th:unless="${#lists.isEmpty(s.scores)}"
+                       th:text="${#strings.listJoin(s.scores, ' · ')}">5-3 · 2-4</small>
+                <small th:if="${s.userSummary != null}" th:text="'내 기록: ' + ${s.userSummary}">내 기록</small>
+                <small class="muted" th:if="${s.winnerId == null}">진행 전</small>
+            </div>
+        </div>
+    </section>
+
+    <!-- 내 포스트시즌 기록 -->
+    <section class="card section" th:if="${postseason.userPlays}">
+        <h2 class="section-title">내 포스트시즌 기록</h2>
+        <p th:unless="${player.pitcher}" th:text="${batting.summary()} + ' · OPS ' + ${@fmt.rate(batting.ops)}">기록</p>
+        <p th:if="${player.pitcher}" th:text="${pitching.games} + '경기 ' + ${pitching.summary()} + ' · ERA ' + ${@fmt.two(pitching.era)}">기록</p>
+    </section>
+
+    <div class="actions">
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season(id=${player.id})}">시즌 화면으로</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/league(id=${player.id})}">리그 현황</a>
+    </div>
+</main>
+</body>
+</html>

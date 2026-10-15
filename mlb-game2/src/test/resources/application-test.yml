@@ -1,0 +1,6 @@
+# 빠른 통합 테스트용 H2(MySQL 호환 모드). 실제 MySQL 8 검증은 MySqlMigrationTest(Testcontainers)에서 수행
+spring:
+  datasource:
+    url: jdbc:h2:mem:mlb_game;MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1
+    username: sa
+    password:

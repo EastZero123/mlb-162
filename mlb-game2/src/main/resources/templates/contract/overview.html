@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('계약')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow">
+    <h1 class="page-title" th:text="${player.name} + ' · 계약'">계약</h1>
+    <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+    <div class="alert alert-success" th:if="${resultMessage}" th:text="${resultMessage}"></div>
+
+    <section class="card section">
+        <h2 class="section-title">현재 계약</h2>
+        <dl class="draft-facts">
+            <div><dt>소속</dt><dd th:text="${@fmt.teamName(player.team, player.leagueLevel)}">팀</dd></div>
+            <div><dt>계약 종류</dt><dd th:text="${player.contractType.label}">최저 연봉</dd></div>
+            <div><dt>연봉</dt>
+                <dd th:text="${player.contractType.name() == 'NONE'} ? '레벨별 마이너 연봉' : ${@fmt.money(player.salary)}">$760,000</dd></div>
+            <div><dt>남은 연수</dt><dd th:text="${player.contractType.name() == 'NONE'} ? '-' : ${player.contractYears} + '년'">1년</dd></div>
+            <div><dt>서비스 연수</dt><dd th:text="${serviceYears} + '년'">0년</dd></div>
+            <div><dt>커리어 수령액</dt><dd th:text="${@fmt.money(careerEarnings)}">$0</dd></div>
+        </dl>
+        <p class="muted small">서비스 3~5년은 연봉조정, 6년 이후 계약이 끝나면 FA가 됩니다. 메이저에서 46시리즈를 뛰면 서비스 1년이에요.</p>
+    </section>
+
+    <section class="card section" th:if="${#lists.isEmpty(offers)}">
+        <p class="muted">지금 결정할 계약 제안이 없습니다. 제안은 시즌이 끝나고 다음 시즌으로 넘어갈 때 도착해요.</p>
+    </section>
+
+    <section class="card section offer-card" th:each="o : ${offers}">
+        <h2 class="section-title">
+            <span th:text="${o.kind.label}">연봉조정</span> ·
+            <span th:text="${o.team.nameKo}">팀</span>
+        </h2>
+        <p class="offer-terms">
+            <strong th:text="${o.years} + '년 ' + ${@fmt.money(o.salary)} + '/년'">1년 $3,200,000</strong>
+            <span class="muted" th:if="${o.years > 1}" th:text="'(총 ' + ${@fmt.money(o.totalValue)} + ')'">총액</span>
+        </p>
+
+        <div class="offer-actions">
+            <form th:action="@{/players/{p}/contract/{o}/accept(p=${player.id},o=${o.id})}" method="post">
+                <button type="submit" class="btn btn-primary">수락</button>
+            </form>
+
+            <form th:if="${o.kind.name() == 'ARBITRATION'}" class="ask-form"
+                  th:action="@{/players/{p}/contract/{o}/arbitrate(p=${player.id},o=${o.id})}" method="post">
+                <input type="number" name="ask" step="10000" th:min="${o.salary}" th:value="${o.salary + 500000}" required>
+                <button type="submit" class="btn btn-ghost">청문회 신청</button>
+            </form>
+            <p class="muted small" th:if="${o.kind.name() == 'ARBITRATION'}">
+                청문회는 적정 연봉에 더 가까운 쪽 금액으로 결정돼요. 너무 높게 부르면 구단 제시액이 채택됩니다.
+            </p>
+
+            <form th:if="${o.kind.name() == 'FREE_AGENCY'}" class="ask-form"
+                  th:action="@{/players/{p}/contract/{o}/counter(p=${player.id},o=${o.id})}" method="post">
+                <input type="number" name="ask" step="10000" th:min="${o.salary}" th:value="${o.salary * 11 / 10}" required>
+                <button type="submit" class="btn btn-ghost">역제안</button>
+            </form>
+            <p class="muted small" th:if="${o.kind.name() == 'FREE_AGENCY'}">
+                오퍼보다 높게 부를수록 구단이 협상을 접을 확률이 커져요 (10% 높으면 약 30% 결렬).
+            </p>
+
+            <form th:if="${o.kind.name() != 'ARBITRATION'}"
+                  th:action="@{/players/{p}/contract/{o}/decline(p=${player.id},o=${o.id})}" method="post">
+                <button type="submit" class="btn btn-ghost">거절</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card section" th:unless="${#lists.isEmpty(history)}">
+        <h2 class="section-title">계약 이력</h2>
+        <ul class="schedule-list">
+            <li th:each="h : ${history}">
+                <span class="muted" th:text="${h.seasonYear}">2030</span>
+                <span th:text="${h.kind.label} + ' · ' + ${h.team.nameKo}">FA · 팀</span>
+                <span th:text="${h.years} + '년 ' + ${@fmt.money(h.salary)}">1년</span>
+                <span class="badge" th:classappend="${h.status.name() == 'ACCEPTED'} ? 'badge-win' : 'badge-lose'"
+                      th:text="${h.status.name() == 'ACCEPTED'} ? '체결' : '불발'">체결</span>
+                <small class="muted" th:text="${h.note}"></small>
+            </li>
+        </ul>
+    </section>
+
+    <div class="actions">
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season(id=${player.id})}">시즌 화면으로</a>
+    </div>
+</main>
+</body>
+</html>

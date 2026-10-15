@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('대시보드')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+    <h1 class="page-title"><span th:text="${nickname}">닉네임</span>님, 환영합니다</h1>
+    <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+    <div class="alert alert-info" th:if="${headlines != null}">
+        <p th:each="h : ${headlines}" th:text="${h}" style="margin:0">은퇴</p>
+    </div>
+
+    <section class="slots">
+        <article class="card slot player-card" th:each="p : ${players}"
+                 th:style="${p.team != null} ? 'border-top-color:' + ${p.team.primaryColor}">
+            <div class="slot-no">
+                <span th:text="${p.position.shortName}">SS</span> · #<span th:text="${p.uniformNumber}">7</span>
+            </div>
+            <h2 class="player-name" th:text="${p.name}">선수 이름</h2>
+            <p class="player-meta">
+                <span th:text="${p.education.label}">고졸</span> ·
+                <span th:text="${p.age} + '세'">18세</span> ·
+                <span th:text="${p.handLabel}">우투우타</span>
+            </p>
+            <div class="ovr">OVR <strong th:text="${#numbers.formatDecimal(p.overall, 1, 1)}">30.0</strong></div>
+
+            <th:block th:switch="${p.stage.name()}">
+                <div th:case="'CREATED'">
+                    <p class="slot-text">드래프트 컴바인 대기 중</p>
+                    <a class="btn btn-primary" th:href="@{/players/{id}/combine(id=${p.id})}">컴바인 참가</a>
+                </div>
+                <div th:case="'COMBINE_DONE'">
+                    <p class="slot-text">컴바인 완료 · 드래프트 대기 중</p>
+                    <a class="btn btn-primary" th:href="@{/players/{id}/combine(id=${p.id})}">드래프트로</a>
+                </div>
+                <div th:case="'DRAFTED'">
+                    <p class="slot-text" th:text="${p.teamDisplayName}">디트로이트 타이거스 A</p>
+                    <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${p.id})}">시즌 진행</a>
+                    <a class="btn btn-ghost" th:href="@{/players/{id}(id=${p.id})}">선수 정보</a>
+                </div>
+            </th:block>
+        </article>
+
+        <div class="card slot slot-empty" th:each="i : ${emptySlots > 0 ? #numbers.sequence(1, emptySlots) : {}}">
+            <div class="slot-no">빈 슬롯</div>
+            <p class="slot-text">아직 선수가 없습니다</p>
+            <a class="btn btn-primary" th:href="@{/players/new}">선수 생성</a>
+        </div>
+    </section>
+
+    <section class="card section" th:unless="${#lists.isEmpty(retiredPlayers)}" style="margin-top:16px">
+        <h2 class="section-title">은퇴 선수</h2>
+        <ul class="schedule-list">
+            <li th:each="r : ${retiredPlayers}">
+                <strong th:text="${r.name}">선수</strong>
+                <small class="muted" th:text="${r.position.label} + ' · ' + ${r.age} + '세 은퇴'">유격수</small>
+                <a th:href="@{/players/{id}/career(id=${r.id})}">커리어 보기</a>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

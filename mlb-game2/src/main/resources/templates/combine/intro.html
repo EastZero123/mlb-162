@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('드래프트 컴바인')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow">
+    <h1 class="page-title">드래프트 컴바인</h1>
+    <p class="muted">
+        <strong th:text="${player.name}">선수</strong>의 컴바인은 한 번만 진행됩니다.
+        당일 컨디션에 따라 기록이 달라지고, 결과는 드래프트 순위에만 반영돼요. 능력치는 바뀌지 않습니다.
+    </p>
+    <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <section class="card section">
+        <h2 class="section-title">테스트 종목</h2>
+        <ol class="test-list">
+            <li th:each="t : ${tests}">
+                <span th:text="${t.label}">60야드 대시</span>
+                <small class="muted" th:text="'(' + ${t.unit} + ')'">(초)</small>
+            </li>
+        </ol>
+    </section>
+
+    <form th:action="@{/players/{id}/combine(id=${player.id})}" method="post" class="card section form">
+        <h2 class="section-title">스카우트 인터뷰</h2>
+        <p class="question" th:text="'“' + ${question} + '”'">질문</p>
+        <label class="choice" th:each="a : ${answers}">
+            <input type="radio" name="answer" th:value="${a.name()}" required>
+            <span th:text="${a.text}">답변</span>
+        </label>
+        <p class="muted small">스카우트마다 좋아하는 답이 다릅니다. 마음에 드는 답을 고르세요.</p>
+        <button type="submit" class="btn btn-primary">컴바인 시작</button>
+    </form>
+</main>
+</body>
+</html>
