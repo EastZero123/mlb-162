@@ -58,8 +58,8 @@ public class PlateAppearanceModelTest {
         PaProbabilities star = vsMlb(BatterProfile.average(85));
 
         assertThat(weak.expectedAverage()).isLessThan(0.20);
-        assertThat(star.expectedAverage()).isGreaterThan(0.30);
-        assertThat(star.homeRun()).isGreaterThan(0.05);          // 600타석 30홈런 이상 페이스
+        assertThat(star.expectedAverage()).isGreaterThan(0.29);          // 기준 이상 압축 후 약 .300 (시즌 시뮬레이션 .313)
+        assertThat(star.homeRun()).isGreaterThan(0.04);          // 600타석 24홈런 이상 페이스 (압축 후 약 27홈런, 시즌 시뮬레이션 767타석 36홈런)
         assertThat(weak.strikeout()).isGreaterThan(average.strikeout());
         assertThat(star.strikeout()).isLessThan(average.strikeout());
     }

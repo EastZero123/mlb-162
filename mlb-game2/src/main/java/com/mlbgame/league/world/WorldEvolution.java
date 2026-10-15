@@ -106,8 +106,21 @@ public final class WorldEvolution {
         return -3;
     }
 
-    static void develop(NpcPlayer npc, RandomGenerator rng) {
+    /**
+     * 27세 이하이고 잠재력까지 많이 남았으면 남은 차이의 1/4 (최대 +5)씩 자란다 — 특급 유망주가 실제로 스타가 되어
+     * 세월이 지나도 리그의 MVP급 경쟁자가 유지되도록 (M5-3). 그 외에는 나이별 기본 성장.
+     */
+    static int growthFor(NpcPlayer npc) {
         int base = growthBase(npc.getAge());
+        if (npc.getAge() <= 27 && npc.getOverall() < npc.getPotential()) {
+            int gap = (int) Math.ceil((npc.getPotential() - npc.getOverall()) / 4.0);
+            return Math.max(base, Math.min(5, gap));
+        }
+        return base;
+    }
+
+    static void develop(NpcPlayer npc, RandomGenerator rng) {
+        int base = growthFor(npc);
         double roll = rng.nextDouble();
         int swing = 0;
         if (roll < BREAKOUT_RATE && npc.getAge() <= 27) swing = 3;
@@ -310,15 +323,22 @@ public final class WorldEvolution {
         return callUps;
     }
 
-    /** 팜 점수로 유망주 생성: OVR = 56 + (팜 − 60)/6 ± 4, 21~24세, 잠재력 = OVR + 5~17 */
+    /** 특급 유망주 비율과 잠재력 추가치 — 스타 꼬리가 세월이 지나도 유지되도록 ({@link WorldGenerator#STAR_CHANCE}) */
+    static final double STAR_PROSPECT_CHANCE = 0.10;
+
+    /** 팜 점수로 유망주 생성: OVR = 56 + (팜 − 60)/6 ± 4, 21~24세, 잠재력 = OVR + 5~17 (특급 유망주는 +8~15 더) */
     static NpcPlayer callUp(Long worldId, WorldTeam team, Position position, RosterRole role, RandomGenerator rng) {
         double target = 56 + (team.getFarmScore() - 60) / 6.0 + rng.nextGaussian() * 4;
         int overall = (int) Math.round(Math.max(40, Math.min(80, target)));
         int[] attributes = WorldGenerator.attributes(rng, overall);
         Hand throwsHand = position.isPitcher() && rng.nextInt(100) < 28 ? Hand.L : Hand.R;
         Hand bats = position.isPitcher() ? throwsHand : (rng.nextInt(100) < 35 ? Hand.L : Hand.R);
+        int potential = overall + 5 + rng.nextInt(13);
+        if (rng.nextDouble() < STAR_PROSPECT_CHANCE) {
+            potential += 8 + rng.nextInt(8);
+        }
         return NpcPlayer.create(worldId, team.getTeam().getId(), NameGenerator.next(rng), position, bats, throwsHand,
-                21 + rng.nextInt(4), Math.min(99, overall + 5 + rng.nextInt(13)), attributes, role,
+                21 + rng.nextInt(4), Math.min(99, potential), attributes, role,
                 Payroll.MINIMUM_SALARY, 1, 0);
     }
 

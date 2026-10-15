@@ -107,6 +107,15 @@ public class Player extends BaseTimeEntity {
     @Column(name = "attr_value", nullable = false)
     private Map<Attribute, Integer> attributes = new EnumMap<>(Attribute.class);
 
+    /** 다음 +1 까지 쌓인 훈련 횟수 ({@link TrainingCost}). 0 이면 행 없음 */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "player_training_progress", joinColumns = @JoinColumn(name = "player_id"))
+    @MapKeyEnumerated(EnumType.STRING)
+    @MapKeyJdbcTypeCode(SqlTypes.VARCHAR)
+    @MapKeyColumn(name = "attr_code", length = 30)
+    @Column(name = "progress", nullable = false)
+    private Map<Attribute, Integer> trainingProgress = new EnumMap<>(Attribute.class);
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "player_pitches", joinColumns = @JoinColumn(name = "player_id"))
     @MapKeyColumn(name = "slot")
@@ -180,7 +189,7 @@ public class Player extends BaseTimeEntity {
         if (statPoints <= 0) {
             throw new IllegalStateException("보유한 스탯업 포인트가 없습니다.");
         }
-        int value = train(attribute);
+        int value = raise(attribute);
         statPoints--;
         return value;
     }
@@ -262,10 +271,39 @@ public class Player extends BaseTimeEntity {
         this.leagueLevel = level;
     }
 
-    /** 훈련: 고른 능력치 1개를 확정 +1 (랜덤 없음). 포지션 능력치가 아니거나 이미 100이면 불가 */
+    /**
+     * 훈련 1회: 진행도를 1 쌓고, {@link TrainingCost} 만큼 쌓이면 능력치 +1 (랜덤 없음).
+     * 포지션 능력치가 아니거나 이미 100이면 불가.
+     *
+     * @return 훈련 후 능력치 값
+     */
     public int train(Attribute attribute) {
         if (!canTrain(attribute)) {
             throw new IllegalArgumentException(attribute.getLabel() + "은(는) 훈련할 수 없습니다.");
+        }
+        int progress = trainingProgress(attribute) + 1;
+        if (progress >= trainingCost(attribute)) {      // 노화로 능력치가 내려가 비용이 줄었을 수도 있으니 >=
+            trainingProgress.remove(attribute);
+            return raise(attribute);
+        }
+        trainingProgress.put(attribute, progress);
+        return attributes.get(attribute);
+    }
+
+    /** 능력치 +1 에 필요한 훈련 횟수 (지금 값·나이 기준) */
+    public int trainingCost(Attribute attribute) {
+        return TrainingCost.of(attribute(attribute), age);
+    }
+
+    /** 다음 +1 까지 쌓인 훈련 횟수 */
+    public int trainingProgress(Attribute attribute) {
+        return trainingProgress.getOrDefault(attribute, 0);
+    }
+
+    /** 능력치 바로 +1 — 훈련 비용이 다 찼을 때, 스탯업 포인트 */
+    private int raise(Attribute attribute) {
+        if (!canTrain(attribute)) {
+            throw new IllegalArgumentException(attribute.getLabel() + "은(는) 올릴 수 없습니다.");
         }
         int value = attributes.get(attribute) + 1;
         attributes.put(attribute, value);
@@ -275,6 +313,11 @@ public class Player extends BaseTimeEntity {
     public boolean canTrain(Attribute attribute) {
         Integer value = attributes.get(attribute);
         return value != null && value < Attribute.MAX;
+    }
+
+    /** 포지션 능력치 중 아직 100이 아닌 게 하나라도 있는가 (모두 100이면 훈련 차례를 건너뛴다) */
+    public boolean hasTrainableAttribute() {
+        return Attribute.forPosition(position).stream().anyMatch(this::canTrain);
     }
 
     public void requireStage(PlayerStage expected) {

@@ -4,8 +4,11 @@
 
 <!-- 훈련 선택: 능력치 버튼 11개, 하나를 누르면 +1 -->
 <section th:fragment="training(player)" class="card section training-panel">
-    <h2 class="section-title">훈련 — 능력치 하나를 골라 +1</h2>
-    <p class="muted small">훈련을 골라야 다음 시리즈를 진행할 수 있어요.</p>
+    <h2 class="section-title">훈련 — 능력치 하나를 골라 훈련</h2>
+    <p class="muted small">
+        훈련을 골라야 다음 시리즈를 진행할 수 있어요. 능력치가 높을수록(85·90·95), 나이가 많을수록(30·33·36세)
+        +1 에 훈련이 여러 번 필요해요.
+    </p>
     <form th:action="@{/players/{id}/season/train(id=${player.id})}" method="post" class="train-grid">
         <button type="submit" name="attribute" class="train-btn"
                 th:each="a : ${player.attributeViews}"
@@ -13,9 +16,14 @@
                 th:disabled="${a.value() >= 100}"
                 th:title="${a.attribute().description}">
             <span class="train-label" th:text="${a.label()}">컨택</span>
-            <span class="train-value">
+            <span class="train-value" th:with="cost=${player.trainingCost(a.attribute())},
+                                               progress=${player.trainingProgress(a.attribute())}">
                 <span th:text="${a.value()}">40</span>
-                <span th:if="${a.value() < 100}" th:text="'→ ' + ${a.value() + 1}">→ 41</span>
+                <th:block th:if="${a.value() < 100}">
+                    <span th:if="${cost - progress == 1}" th:text="'→ ' + ${a.value() + 1}">→ 41</span>
+                    <span th:unless="${cost - progress == 1}" class="train-progress"
+                          th:text="'훈련 ' + ${progress} + '/' + ${cost}">훈련 1/4</span>
+                </th:block>
                 <span th:unless="${a.value() < 100}">MAX</span>
             </span>
             <small class="train-desc" th:text="${a.attribute().description}">설명</small>

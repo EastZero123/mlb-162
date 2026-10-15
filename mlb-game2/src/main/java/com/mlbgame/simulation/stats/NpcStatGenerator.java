@@ -35,6 +35,32 @@ public class NpcStatGenerator {
     static final double RELIEVER_APPEARANCE_RATE = 0.40;
     static final double CLOSER_APPEARANCE_RATE = 0.42;
     static final double CLOSER_SAVE_SITUATION = 0.62;
+    /**
+     * 투수 실점 보정: 등판(6이닝 안팎) 단위 Base Runs 는 작은 표본이라 실점을 부풀린다 (식의 B/(B+C) 가 볼록).
+     * 같은 능력치 내 선수(경기 시뮬레이션) 대비 NPC ERA 가 OVR 65~90 전 구간에서 1.12~1.21배라 (M5-3 시상 공정성 검증)
+     * 평균 선발 ERA 가 리그 평균(4.2~4.5)에 오도록 맞춘 값
+     */
+    static final double RUN_SCALE = 0.87;
+
+    /** 득점권 타석 비율 (MLB 약 28%) — 이 타석에는 클러치·위기 관리 보정이 붙는다 (경기 시뮬레이션과 맞춤) */
+    static final double RISP_SHARE = 0.28;
+    static final PaContext RISP = new PaContext(true, 0, 0);
+
+    /**
+     * 주전의 출전율·경기당 타석은 OVR 이 높을수록 많다 — 경기 시뮬레이션에서 좋은 타자는 타순이 앞이고 매 경기 나가므로
+     * (M5-3 시상 공정성 검증: OVR 85 내 선수 762타석 vs NPC 632타석)
+     */
+    static double lineupPlayRate(double overall) {
+        return clamp(LINEUP_PLAY_RATE + 0.002 * (overall - LEAGUE_AVERAGE), 0.88, 0.97);
+    }
+
+    static double lineupPaPerGame(double overall) {
+        return clamp(LINEUP_PA_PER_GAME + 0.03 * (overall - LEAGUE_AVERAGE), 3.9, 4.75);
+    }
+
+    private static PaContext context(RandomGenerator rng) {
+        return rng.nextDouble() < RISP_SHARE ? RISP : PaContext.NEUTRAL;
+    }
 
     private final PlateAppearanceModel model;
 
@@ -49,8 +75,9 @@ public class NpcStatGenerator {
 
     public HitterLine hitter(PlayerSnapshot player, RosterRole role, int teamGames, RandomGenerator rng) {
         boolean regular = role == RosterRole.LINEUP;
-        int games = binomial(teamGames, regular ? LINEUP_PLAY_RATE : BENCH_PLAY_RATE, rng);
-        int pa = (int) Math.round(games * (regular ? LINEUP_PA_PER_GAME : BENCH_PA_PER_GAME));
+        double overall = player.overall();
+        int games = binomial(teamGames, regular ? lineupPlayRate(overall) : BENCH_PLAY_RATE, rng);
+        int pa = (int) Math.round(games * (regular ? lineupPaPerGame(overall) : BENCH_PA_PER_GAME));
 
         BatterProfile batter = BatterProfile.of(player);
         BattingLine line = new BattingLine();
@@ -58,7 +85,7 @@ public class NpcStatGenerator {
         double stealDelta = delta(player.attribute(Attribute.STEALING));
         for (int i = 0; i < pa; i++) {
             PitcherProfile pitcher = PitcherProfile.average(LEAGUE_AVERAGE).withThrows(rng.nextInt(100) < 72 ? Hand.R : Hand.L);
-            PaProbabilities p = model.probabilities(batter, pitcher, PaContext.NEUTRAL);
+            PaProbabilities p = model.probabilities(batter, pitcher, context(rng));
             PaResult r = p.draw(rng);
             line.plateAppearances++;
             if (r.isAtBat()) line.atBats++;
@@ -153,7 +180,7 @@ public class NpcStatGenerator {
         BattingLine against = new BattingLine();
         for (int b = 0; b < maxBatters && line.outs < maxOuts; b++) {
             BatterProfile batter = BatterProfile.average(LEAGUE_AVERAGE).withBats(rng.nextInt(100) < 60 ? Hand.R : Hand.L);
-            PaResult r = model.probabilities(batter, pitcher, PaContext.NEUTRAL).draw(rng);
+            PaResult r = model.probabilities(batter, pitcher, context(rng)).draw(rng);
             line.battersFaced++;
             against.plateAppearances++;
             if (r.isAtBat()) against.atBats++;
@@ -169,7 +196,7 @@ public class NpcStatGenerator {
             }
         }
         line.pitches = (int) Math.round(line.battersFaced * 3.85);
-        line.runs = (int) Math.round(baseRuns(against) * (0.8 + 0.4 * rng.nextDouble()));
+        line.runs = (int) Math.round(baseRuns(against) * RUN_SCALE * (0.8 + 0.4 * rng.nextDouble()));
         return line;
     }
 

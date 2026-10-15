@@ -101,8 +101,27 @@ public final class WorldGenerator {
         return result;
     }
 
+    /**
+     * 스타 꼬리: 주전·선발·마무리의 {@value #STAR_CHANCE} 비율은 +6 ~ +25 더 강하다. 실제 MLB 재능 분포는 오른쪽으로 길어
+     * 리그마다 MVP급(85~90)이 몇 명씩 있다. 정규분포만 쓰면 리그 최고가 80 안팎이라 내 선수가 매년 MVP 를 받았다 (M5-3).
+     * 평균이 올라가지 않도록 기대 보너스({@link #STAR_MEAN})만큼 기준을 내린다.
+     */
+    static final double STAR_CHANCE = 0.12;
+    static final double STAR_BASE = 6;
+    static final double STAR_SPREAD = 7;
+    static final double STAR_MEAN = STAR_CHANCE * (STAR_BASE + STAR_SPREAD * 0.798);   // E|N(0,1)| ≈ 0.798
+
+    static double starBonus(RandomGenerator random, RosterRole role) {
+        if (role == RosterRole.BENCH || role == RosterRole.BULLPEN) {
+            return 0;
+        }
+        double bonus = random.nextDouble() < STAR_CHANCE ? STAR_BASE + Math.abs(random.nextGaussian()) * STAR_SPREAD : 0;
+        return bonus - STAR_MEAN;
+    }
+
     static GeneratedNpc npc(RandomGenerator random, Position position, double roleTarget, RosterRole role) {
-        int overall = (int) Math.round(clamp(roleTarget + random.nextGaussian() * 4, 35, 92));
+        double star = starBonus(random, role);
+        int overall = (int) Math.round(clamp(roleTarget + star + random.nextGaussian() * 4, 35, 92));
         int age = 22 + random.nextInt(9) + random.nextInt(8);          // 22~37, 29~30세가 가장 많음
         int potentialBonus = age <= 25 ? 3 + random.nextInt(13) : age <= 28 ? random.nextInt(6) : 0;
         int potential = Math.min(99, overall + potentialBonus);

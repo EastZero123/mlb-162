@@ -124,6 +124,8 @@ public class GameSimulator {
         boolean starterActive;
         int userPitches;
         int userRunsAllowed;
+        /** 내 선발이 이닝 도중 내려갈 때 남긴 주자 수 — 불펜이 들여보내면 내 실점 (MLB 자책 규칙) */
+        int inheritedRunners;
         Integer starterExitDiff;
         boolean closerActive;
         boolean closerUsed;
@@ -217,6 +219,9 @@ public class GameSimulator {
                 plateAppearance(batting, defense);
             }
             lines.get(batting).add(score[batting] - startScore);
+            if (defense == us) {
+                inheritedRunners = 0;                // 이닝이 끝나면 남긴 주자 책임도 끝
+            }
             if (defense == us && closerActive) {
                 closerActive = false;
                 closerExitDiff = score[us] - score[them];
@@ -318,6 +323,10 @@ public class GameSimulator {
             }
             if (mound.user()) {
                 recordUserPitching(result, Math.min(3, outs) - outsBefore, runs);
+            } else if (defense == us && inheritedRunners > 0 && runs > 0) {
+                int charged = Math.min(runs, inheritedRunners);      // 내가 남긴 주자가 먼저 들어온 것으로 본다
+                pit.runs += charged;
+                inheritedRunners -= charged;
             }
         }
 
@@ -647,6 +656,7 @@ public class GameSimulator {
                     && (userPitches >= pitchLimit() || userRunsAllowed >= STARTER_RUN_LIMIT)) {
                 starterActive = false;
                 starterExitDiff = score[us] - score[them];
+                inheritedRunners = outs < 3 ? (int) java.util.Arrays.stream(bases).filter(b -> b != EMPTY).count() : 0;
             }
         }
 

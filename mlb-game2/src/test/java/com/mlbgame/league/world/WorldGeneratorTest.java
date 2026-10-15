@@ -77,6 +77,23 @@ class WorldGeneratorTest {
     }
 
     @Test
+    void 리그마다_MVP급_스타가_몇_명씩_있다() {
+        double stars = 0;
+        double best = 0;
+        int worlds = 5;
+        for (long seed = 100; seed < 100 + worlds; seed++) {
+            for (GeneratedTeam team : WorldGenerator.generate(seed, teams)) {
+                for (GeneratedNpc npc : team.roster()) {
+                    if (npc.overall() >= 85) stars++;
+                    best = Math.max(best, npc.overall());
+                }
+            }
+        }
+        assertThat(stars / worlds).as("월드(30팀)당 OVR 85+").isBetween(3.0, 20.0);
+        assertThat(best).isGreaterThanOrEqualTo(88);
+    }
+
+    @Test
     void 재정_규모가_실제_시장_규모를_따른다() {
         Map<String, GeneratedTeam> byCode = WorldGenerator.generate(3L, teams).stream()
                 .collect(Collectors.toMap(t -> t.team().getCode(), Function.identity()));

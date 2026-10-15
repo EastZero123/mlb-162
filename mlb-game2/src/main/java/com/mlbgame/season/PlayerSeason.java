@@ -169,7 +169,7 @@ public class PlayerSeason extends BaseTimeEntity {
         }
     }
 
-    /** 훈련을 마쳐 다음 시리즈를 진행할 수 있게 함 — {@code TrainingService} 만 호출 */
+    /** 훈련을 마쳐 다음 시리즈를 진행할 수 있게 함 — {@code TrainingService}, 능력치가 모두 100이면 {@code SeasonService} */
     public void completeTraining() {
         if (!trainingPending) {
             throw new SeasonProgressException("지금은 훈련할 차례가 아닙니다.");

@@ -137,8 +137,12 @@ public class SeasonController {
                         @RequestParam Attribute attribute, RedirectAttributes redirectAttributes) {
         try {
             TrainingLog log = trainingService.train(authUser.getId(), playerId, attribute);
-            redirectAttributes.addFlashAttribute("trainedMessage",
-                    attribute.getLabel() + " +1 → " + log.getValueAfter());
+            Player player = playerService.getOwned(authUser.getId(), playerId);
+            int progress = player.trainingProgress(attribute);
+            redirectAttributes.addFlashAttribute("trainedMessage", progress == 0
+                    ? attribute.getLabel() + " +1 → " + log.getValueAfter()
+                    : attribute.getLabel() + " 훈련 " + progress + "/" + player.trainingCost(attribute)
+                      + " (" + (player.trainingCost(attribute) - progress) + "회 더 하면 +1)");
         } catch (SeasonProgressException | InvalidTrainingException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {

@@ -145,6 +145,9 @@ public class SeasonService {
                 player.isPitcher() ? null : write(batting),
                 player.isPitcher() ? write(pitching) : null,
                 player.isPitcher() ? null : write(fielding));
+        if (!player.hasTrainableAttribute()) {
+            season.completeTraining();          // 능력치가 모두 100이면 훈련할 게 없으니 바로 다음 시리즈로
+        }
 
         contractService.ensureMlbContract(player, season.getLeagueLevel());   // 메이저 첫 진입 → 최저 연봉 계약
         earningsService.add(player.getId(), season.getSeasonYear(), EarningType.SALARY,

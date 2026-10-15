@@ -89,7 +89,9 @@ class BalanceVerificationTest {
         for (int i = 1; i < ops.length; i++) {
             assertThat(ops[i]).as("OVR 단계 " + i).isGreaterThan(ops[i - 1]);
         }
-        assertThat(ops[4]).as("OVR 85 = MVP급").isGreaterThan(0.900);
+        // 최상위가 폭주하지 않게 위쪽도 막는다 (M5-3 커리어 검증에서 OVR 85 = OPS 1.16 이 나와 상한 추가)
+        assertThat(ops[3]).as("OVR 75 = 좋은 주전").isBetween(0.770, 0.870);
+        assertThat(ops[4]).as("OVR 85 = 올스타~MVP급").isBetween(0.860, 1.000);
         assertThat(ops[2]).as("OVR 65 = 리그 평균").isBetween(0.680, 0.770);
     }
 
@@ -154,6 +156,7 @@ class BalanceVerificationTest {
         PitchingLine avg = SeasonHarness.totalPitching(sp65);
         PitchingLine ace = SeasonHarness.totalPitching(sp80);
         assertThat(ace.getEra()).isLessThan(avg.getEra() - 0.5);
+        assertThat(ace.getEra()).as("에이스도 ERA 2점대 초반 아래로는 드물다").isGreaterThan(2.2);
         assertThat(ace.outs).isGreaterThan(avg.outs);
         assertThat(ace.wins).isGreaterThan(avg.wins);
     }

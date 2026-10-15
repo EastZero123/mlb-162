@@ -91,10 +91,22 @@ public class PlateAppearanceModel {
         return new PaProbabilities(strikeout, walk, hitByPitch, single, doubles, triple, homeRun, groundOut, flyOut);
     }
 
-    /** 기준 능력치 대비 차이 (10 단위) */
+    /** 기준 능력치 대비 차이 (10 단위). 기준보다 높은 쪽은 {@link #compress} 로 눌러 쓴다 */
     private double delta(int rating, double formOffset) {
-        return (rating + formOffset - balance.baselineRating()) / 10.0;
+        return compress((rating + formOffset - balance.baselineRating()) / 10.0);
     }
+
+    /**
+     * 기준 이상 구간의 포화 곡선: g(d) = {@value #HIGH_CEILING} × (1 − e^(−d / {@value #HIGH_SCALE})), 기준 이하는 그대로.
+     * 직선이면 OVR 85 타자가 타율 .367·OPS 1.16, OVR 80 선발이 ERA 1.8 까지 폭주해서(M5-3 커리어 검증),
+     * OVR 75 ≈ OPS .820 / 85 ≈ .920 / 95 ≈ 1.000 이 되도록 맞췄다. 10 차이 → 0.63, 20 → 1.07, 30 → 1.39
+     */
+    static double compress(double d) {
+        return d <= 0 ? d : HIGH_CEILING * (1 - Math.exp(-d / HIGH_SCALE));
+    }
+
+    static final double HIGH_CEILING = 2.07;
+    static final double HIGH_SCALE = 2.75;
 
     /**
      * 좌우 상성. 같은 손 대결이면 타자 불리(−edge/2), 반대손이면 타자 유리(+edge)이고,

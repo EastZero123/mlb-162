@@ -41,7 +41,24 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'balance'   // 오래 걸리는 밸런스 검증은 balanceTest 로 분리
+        excludeTags 'balance', 'career'   // 오래 걸리는 밸런스 검증은 balanceTest·careerTest 로 분리
+    }
+}
+
+// 커리어 전체 자동 진행 밸런스 검증: gradlew careerTest -Pcareers=3 (프로필당 커리어 수, 기본 2)
+tasks.register('careerTest', Test) {
+    description = '선수 생성부터 은퇴까지 자동으로 진행해 데뷔 시기·수상·연봉·은퇴 나이를 리포트합니다.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    systemProperty 'careers', findProperty('careers') ?: '2'
+    useJUnitPlatform {
+        includeTags 'career'
+    }
+    testLogging {
+        showStandardStreams = true
+        events 'passed', 'failed'
+        exceptionFormat 'full'
     }
 }
 

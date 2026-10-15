@@ -82,6 +82,33 @@ class WorldEvolutionTest {
     }
 
     @Test
+    void 세월이_지나도_MVP급_스타가_리그에_남아_있다() {
+        double stars = 0;
+        int seeds = 3;
+        for (long seed = 10; seed < 10 + seeds; seed++) {
+            World w = world(seed);
+            List<NpcPlayer> active = new ArrayList<>(w.npcs);
+            for (int year = 0; year < 15; year++) {
+                List<NpcPlayer> created = new ArrayList<>();
+                WorldEvolution.evolve(seed * 100 + year, 1L, w.teams, active, w.winPct, created);
+                active.addAll(created);
+                active.removeIf(n -> n.getStatus() == NpcStatus.RETIRED);
+            }
+            stars += active.stream().filter(n -> n.getStatus() == NpcStatus.MLB && n.getOverall() >= 85).count();
+        }
+        assertThat(stars / seeds).as("15년 뒤 월드(30팀)당 메이저 OVR 85+").isGreaterThanOrEqualTo(2.0);
+    }
+
+    @Test
+    void 잠재력이_많이_남은_유망주는_빨리_자란다() {
+        NpcPlayer prospect = NpcPlayer.create(1L, 1L, "유망주", com.mlbgame.player.Position.SS,
+                com.mlbgame.player.Hand.R, com.mlbgame.player.Hand.R, 22, 90, WorldGenerator.attributes(
+                        new java.util.SplittableRandom(1), 60), RosterRole.LINEUP, Payroll.MINIMUM_SALARY, 1, 0);
+        assertThat(WorldEvolution.growthFor(prospect)).isEqualTo(5);           // (90 − 60) / 4 → 최대 5
+        assertThat(WorldEvolution.growthBase(22)).isEqualTo(2);
+    }
+
+    @Test
     void 젊은_선수는_대체로_성장하고_노장은_대체로_하락한다() {
         assertThat(WorldEvolution.growthBase(22)).isPositive();
         assertThat(WorldEvolution.growthBase(29)).isZero();
