@@ -4,7 +4,8 @@
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow reveal-all">
-    <section class="card draft-card reveal" th:style="'border-top-color:' + ${draft.team.primaryColor}">
+    <section class="card draft-card reveal" th:style="'border-top-color:' + ${draft.team.primaryColor}"
+             th:classappend="${draft.round == 1} ? 'celebrate'">
         <p class="muted">
             <span th:text="${draft.round}">1</span>라운드 <span th:text="${draft.pickInRound}">5</span>번
             (전체 <span th:text="${draft.overallPick}">5</span>순위)

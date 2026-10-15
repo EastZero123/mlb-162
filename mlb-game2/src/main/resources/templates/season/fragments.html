@@ -53,8 +53,14 @@
                 <span th:text="${player.age} + '세'">22세</span>
             </p>
         </div>
-        <div class="ovr big">OVR <strong th:text="${@fmt.one(player.overall)}">40.0</strong></div>
+        <div class="ovr big">OVR <strong th:text="${@fmt.one(player.overall)}" th:attr="data-count=${@fmt.one(player.overall)}">40.0</strong></div>
     </div>
+    <!-- 시즌 진행 막대: 9시리즈(한 달)마다 눈금 -->
+    <div class="season-track" th:title="${season.seriesPlayed} + ' / 54 시리즈'">
+        <span class="season-progress-fill" th:style="'width:' + ${season.seriesPlayed * 100 / 54} + '%'"></span>
+        <span class="month-tick" th:each="m : ${#numbers.sequence(1, 5)}" th:style="'left:' + ${m * 100 / 6} + '%'"></span>
+    </div>
+    <div class="month-labels"><span>4월</span><span>5월</span><span>6월</span><span>7월</span><span>8월</span><span>9월</span></div>
     <div class="status-grid">
         <div>
             <span class="muted small">진행</span>

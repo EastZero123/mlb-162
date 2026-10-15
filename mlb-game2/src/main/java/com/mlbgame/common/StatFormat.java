@@ -44,6 +44,24 @@ public class StatFormat {
         return suffix.isEmpty() ? team.getNameKo() : team.getNameKo() + " " + suffix;
     }
 
+    /** 하이라이트 문장 앞에 붙일 아이콘 — 문장의 핵심 키워드로 고른다 (앞에 있는 규칙이 우선) */
+    public String icon(String highlight) {
+        if (highlight == null) {
+            return "•";
+        }
+        if (highlight.contains("부상")) return "🚑";
+        if (highlight.contains("블론")) return "💥";
+        if (highlight.contains("끝내기")) return "🎉";
+        if (highlight.contains("홈런")) return "💣";
+        if (highlight.contains("탈삼진 쇼")) return "🔥";
+        if (highlight.contains("세이브") || highlight.contains("구원승")) return "🔒";
+        if (highlight.contains("역전")) return "🔄";
+        if (highlight.contains("맹타") || highlight.contains("타점")) return "🏏";
+        if (highlight.contains("보살") || highlight.contains("도루 저지")) return "🧤";
+        if (highlight.contains("이닝")) return "⚾";
+        return "•";
+    }
+
     /** 이닝별 득점 표 칸: 진행하지 않은 말 공격은 "X" */
     public String inningCell(List<Integer> line, int index) {
         return index < line.size() ? String.valueOf(line.get(index)) : "X";

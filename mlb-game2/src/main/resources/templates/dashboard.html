@@ -33,8 +33,21 @@
                     <p class="slot-text">컴바인 완료 · 드래프트 대기 중</p>
                     <a class="btn btn-primary" th:href="@{/players/{id}/combine(id=${p.id})}">드래프트로</a>
                 </div>
-                <div th:case="'DRAFTED'">
+                <div th:case="'DRAFTED'" th:with="s=${seasons[p.id]}">
                     <p class="slot-text" th:text="${p.teamDisplayName}">디트로이트 타이거스 A</p>
+                    <div class="card-badges">
+                        <span class="badge badge-info" th:if="${s != null}"
+                              th:text="${s.seasonYear} + ' · ' + ${s.seriesPlayed} + '/54'">2026 · 12/54</span>
+                        <span class="badge badge-info" th:if="${s != null}"
+                              th:text="${s.teamWins} + '승 ' + ${s.teamLosses} + '패'">7승 5패</span>
+                        <span class="badge badge-gold" th:if="${p.statPoints > 0}" th:text="'포인트 ' + ${p.statPoints}">포인트 2</span>
+                        <span class="badge badge-lose" th:if="${s != null and s.sidelined}">부상</span>
+                        <span class="badge badge-gold" th:if="${s != null and s.trainingPending}">훈련 대기</span>
+                        <span class="badge badge-gold" th:if="${pendingContracts.contains(p.id)}">계약 협상</span>
+                    </div>
+                    <div class="season-progress" th:if="${s != null}">
+                        <span class="season-progress-fill" th:style="'width:' + ${s.seriesPlayed * 100 / 54} + '%'"></span>
+                    </div>
                     <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${p.id})}">시즌 진행</a>
                     <a class="btn btn-ghost" th:href="@{/players/{id}(id=${p.id})}">선수 정보</a>
                 </div>

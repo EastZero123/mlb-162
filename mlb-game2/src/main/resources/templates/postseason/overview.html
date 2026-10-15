@@ -18,12 +18,13 @@
         <p th:if="${postseason.userPlays}">
             <strong th:text="${player.team.nameKo}">팀</strong>이(가) 포스트시즌에 진출했습니다! 라운드마다 직접 경기에 나섭니다.
         </p>
-        <div class="award-banner" th:if="${postseason.done and postseason.championTeamId != null}">
+        <div class="award-banner" th:if="${postseason.done and postseason.championTeamId != null}"
+             th:classappend="${postseason.championTeamId == myTeam} ? 'celebrate'">
             <span class="award-icon">🏆</span>
             <strong th:text="${teams[postseason.championTeamId].nameKo} + ' 월드시리즈 우승!'">우승</strong>
             <span th:if="${postseason.championTeamId == myTeam}">내 팀이 정상에 올랐습니다!</span>
         </div>
-        <div class="award-banner" th:each="aw : ${awards}">
+        <div class="award-banner celebrate" th:each="aw : ${awards}">
             <span class="award-icon">🏅</span>
             <strong th:text="${aw.title}">MVP</strong>
             <span th:text="'스탯업 포인트 +' + ${aw.points} + ' · 보너스 ' + ${@fmt.money(aw.bonus)}">+2</span>

@@ -33,13 +33,13 @@
     <section class="card section next-card" th:if="${!season.trainingPending and next != null}">
         <h2 class="section-title" th:text="${next.series().seriesNo()} + '번째 시리즈 · ' + ${next.series().month()} + '월'">다음 시리즈</h2>
         <div class="matchup">
-            <div class="matchup-team">
+            <div class="matchup-team team-stripe" th:style="'--team-color:' + ${player.team.primaryColor}">
                 <span class="muted small" th:text="${next.series().home()} ? '홈' : '원정'">홈</span>
                 <strong th:text="${@fmt.teamName(player.team, season.leagueLevel)}">우리 팀</strong>
                 <small class="muted" th:text="'전력 ' + ${@fmt.one(next.team().overall())}">전력</small>
             </div>
             <div class="vs">VS</div>
-            <div class="matchup-team">
+            <div class="matchup-team team-stripe" th:style="'--team-color:' + ${next.opponent().primaryColor}">
                 <span class="muted small" th:text="${next.series().home()} ? '원정' : '홈'">원정</span>
                 <strong th:text="${@fmt.teamName(next.opponent(), season.leagueLevel)}">상대 팀</strong>
                 <small class="muted" th:text="'전력 ' + ${@fmt.one(next.opponentRatings().overall())}">전력</small>

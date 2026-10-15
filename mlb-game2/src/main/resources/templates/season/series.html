@@ -27,7 +27,7 @@
             <strong th:text="${t.kind.label}">트레이드</strong>
             <span th:text="${t.note}">이적</span>
         </div>
-        <div class="award-banner" th:each="aw : ${detail.awards()}">
+        <div class="award-banner celebrate" th:each="aw : ${detail.awards()}">
             <span class="award-icon">🏆</span>
             <strong th:text="${aw.title}">5월 이달의 선수</strong>
             <span th:text="'스탯업 포인트 +' + ${aw.points} + ' · 보너스 ' + ${@fmt.money(aw.bonus)}">+1</span>
@@ -83,8 +83,11 @@
     <section class="card section reveal" th:if="${!#lists.isEmpty(result.highlights())}"
              th:style="'animation-delay:' + ${0.3 + result.games().size() * 0.4} + 's'">
         <h2 class="section-title">하이라이트</h2>
-        <ul class="highlight-list">
-            <li th:each="h : ${result.highlights()}" th:text="${h}">2차전 7회말 역전 투런 홈런!</li>
+        <ul class="highlight-list icons">
+            <li th:each="h : ${result.highlights()}">
+                <span class="hl-icon" th:text="${@fmt.icon(h)}">💣</span>
+                <span th:text="${h}">2차전 7회말 역전 투런 홈런!</span>
+            </li>
         </ul>
     </section>
 

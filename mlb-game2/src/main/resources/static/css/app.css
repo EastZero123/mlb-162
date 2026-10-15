@@ -13,6 +13,9 @@
     --error-text: #b3261e;
     --info-bg: #e8f0fb;
     --info-text: #0b3d91;
+    --gold-bg: #fff3c4;
+    --gold-text: #8a6100;
+    --gold-border: #f0c419;
     --radius: 10px;
 }
 
@@ -31,6 +34,9 @@
         --error-text: #f2a6a0;
         --info-bg: #1b2a44;
         --info-text: #a9c4f0;
+        --gold-bg: #3a3014;
+        --gold-text: #f3d36b;
+        --gold-border: #b8921a;
     }
 }
 
@@ -237,7 +243,7 @@ a.btn { text-decoration: none; text-align: center; }
     font-size: 32px; font-weight: 800;
     background: var(--info-bg); color: var(--info-text);
 }
-.grade-S { background: #fff3c4; color: #8a6100; }
+.grade-S { background: var(--gold-bg); color: var(--gold-text); }
 .grade-A { background: var(--success-bg); color: var(--success-text); }
 .total { margin: 0; font-size: 28px; font-weight: 800; }
 .scout-comment { font-style: italic; margin: 16px 0 8px; }
@@ -259,8 +265,8 @@ a.btn { text-decoration: none; text-align: center; }
     margin-top: 12px;
     padding: 12px 14px;
     border-radius: 8px;
-    background: #fff3c4;
-    color: #8a6100;
+    background: var(--gold-bg);
+    color: var(--gold-text);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -268,7 +274,39 @@ a.btn { text-decoration: none; text-align: center; }
 }
 .award-banner strong { font-size: 18px; }
 .award-icon { font-size: 22px; }
-.points-panel { border: 2px solid #f0c419; }
+.points-panel { border: 2px solid var(--gold-border); }
+.award-banner.celebrate { animation: pop .6s ease both; border: 1px solid var(--gold-border); }
+@keyframes pop {
+    0% { transform: scale(.92); opacity: 0; }
+    60% { transform: scale(1.03); opacity: 1; }
+    100% { transform: none; }
+}
+.confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1000; }
+
+/* 시즌 진행 막대 */
+.season-progress, .season-track {
+    position: relative;
+    height: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.season-progress { margin: 0 0 12px; }
+.season-track { margin-top: 16px; height: 10px; }
+.season-progress-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transition: width .6s ease;
+}
+.month-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border); }
+.month-labels { display: grid; grid-template-columns: repeat(6, 1fr); font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+.card-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: -8px 0 10px; }
+.team-stripe { border-top: 4px solid var(--team-color, var(--border)); padding-top: 8px; border-radius: 4px; }
+.highlight-list.icons { list-style: none; padding-left: 0; }
+.highlight-list.icons li { display: flex; gap: 8px; align-items: baseline; }
+.hl-icon { width: 1.4em; flex: none; text-align: center; }
 .level-banner { margin-top: 12px; padding: 12px 14px; border-radius: 8px; display: flex; flex-direction: column; gap: 2px; }
 .level-banner.up { background: var(--success-bg); color: var(--success-text); }
 .level-banner.down { background: var(--error-bg); color: var(--error-text); }
@@ -308,6 +346,8 @@ a.btn { text-decoration: none; text-align: center; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .badge-win { background: var(--success-bg); color: var(--success-text); }
 .badge-lose { background: var(--error-bg); color: var(--error-text); }
+.badge-info { background: var(--info-bg); color: var(--info-text); }
+.badge-gold { background: var(--gold-bg); color: var(--gold-text); }
 .game-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .game-score { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
 .linescore-wrap, .table-wrap { overflow-x: auto; }
@@ -381,6 +421,14 @@ a.btn { text-decoration: none; text-align: center; }
 @media (max-width: 560px) {
     .status-grid { grid-template-columns: repeat(2, 1fr); }
     .status-head { flex-direction: column; }
+    .site-header { flex-wrap: wrap; gap: 8px; }
+    .header-right { gap: 8px; flex-wrap: wrap; }
+    .header-right .btn { padding: 6px 10px; font-size: 13px; }
+    .container { padding: 16px 12px; }
+    .section { padding: 16px; }
+    .matchup { grid-template-columns: 1fr; gap: 6px; }
+    .actions .btn { flex: 1 1 calc(50% - 8px); }
+    .tab-row { overflow-x: auto; }
 }
 
 @keyframes fadeUp {
@@ -396,5 +444,6 @@ a.btn { text-decoration: none; text-align: center; }
     .profile-head { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .reveal-all .reveal { animation: none; }
+    .reveal-all .reveal, .award-banner.celebrate { animation: none; }
+    .season-progress-fill { transition: none; }
 }
