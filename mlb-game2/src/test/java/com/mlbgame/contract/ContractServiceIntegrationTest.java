@@ -320,6 +320,34 @@ class ContractServiceIntegrationTest {
 
     @Test
     @Tag("bugfix")
+    void 원소속팀은_예산_여유가_없어도_FA_오퍼에_항상_포함된다() {
+        Player player = mlbPlayer(80);
+        player.signContract(null, 10_000_000, 1, ContractType.ARBITRATION);
+        withServiceYears(player, Payroll.FREE_AGENCY_SERVICE);
+        LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
+        Long current = player.getTeam().getId();
+        // 원소속팀만 예산 초과(여유 −$5M), 다른 구단은 여유 $100M
+        Map<Long, Long> payroll = new HashMap<>();
+        for (NpcPlayer npc : npcPlayerRepository.findByWorldIdAndStatus(world.getId(), NpcStatus.MLB)) {
+            payroll.merge(npc.getTeamId(), npc.getSalary(), Long::sum);
+        }
+        for (WorldTeam team : worldTeamRepository.findByWorldIdOrderByIdAsc(world.getId())) {
+            long room = team.getTeam().getId().equals(current) ? -5_000_000 : 100_000_000;
+            team.updateFinances(payroll.getOrDefault(team.getTeam().getId(), 0L) + room, team.getFarmScore());
+        }
+
+        contractService.offseason(player, world, world.getCurrentYear());
+
+        List<ContractOffer> offers = contractService.pending(player.getId());
+        assertThat(offers).hasSizeLessThanOrEqualTo(ContractService.MAX_FA_OFFERS);
+        assertThat(offers).extracting(o -> o.getTeam().getId()).contains(current).doesNotHaveDuplicates();
+        assertThat(offers).filteredOn(o -> o.getTeam().getId().equals(current))
+                .singleElement()
+                .satisfies(o -> assertThat(o.getYears()).isGreaterThan(1));   // 1년 저가 대체 제안이 아닌 정식 오퍼
+    }
+
+    @Test
+    @Tag("bugfix")
     void 평판이_높으면_FA_오퍼가_한_구단_더_온다() {
         Player player = mlbPlayer(80);
         player.signContract(null, 10_000_000, 1, ContractType.ARBITRATION);

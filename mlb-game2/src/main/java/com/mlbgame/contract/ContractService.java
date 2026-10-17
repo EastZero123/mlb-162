@@ -178,18 +178,27 @@ public class ContractService {
         }
         List<Candidate> candidates = new ArrayList<>();
         List<Candidate> squeezed = new ArrayList<>();
+        Candidate currentTeam = null;
         for (WorldTeam team : worldTeamRepository.findByWorldIdOrderByIdAsc(world.getId())) {
             long salary = Math.max(Payroll.MINIMUM_SALARY, ContractRules.round(ContractRules.freeAgentSalary(value,
                     team.getMarket(), dice.nextDouble()) * ReputationRules.freeAgentSalaryFactor(player.getReputation())));
             long room = team.getBudget() - payroll.getOrDefault(team.getTeam().getId(), 0L);
             boolean current = team.getTeam().getId().equals(player.getTeam().getId());
             double score = Math.max(room, 1) * (0.6 + 0.8 * dice.nextDouble()) * (current ? CURRENT_TEAM_BONUS : 1);
+            Candidate candidate;
             if (room >= salary * BUDGET_STRETCH) {
-                candidates.add(new Candidate(team, salary, score));
-            } else if (room > 0) {
-                // 예산이 빠듯한 구단은 깎은 금액으로 제안
-                squeezed.add(new Candidate(team, Math.max(Payroll.MINIMUM_SALARY,
-                        ContractRules.round(salary * SQUEEZED_RATE)), score));
+                candidate = new Candidate(team, salary, score);
+                candidates.add(candidate);
+            } else {
+                // 예산이 빠듯한 구단은 깎은 금액으로 제안 (여유가 아예 없는 구단은 원소속팀일 때만)
+                candidate = new Candidate(team, Math.max(Payroll.MINIMUM_SALARY,
+                        ContractRules.round(salary * SQUEEZED_RATE)), score);
+                if (room > 0) {
+                    squeezed.add(candidate);
+                }
+            }
+            if (current) {
+                currentTeam = candidate;
             }
         }
         candidates.sort(Comparator.comparingDouble(Candidate::score).reversed());
@@ -200,8 +209,16 @@ public class ContractService {
             squeezed.sort(Comparator.comparingDouble(Candidate::score).reversed());
             candidates.addAll(squeezed.stream().limit(minOffers - candidates.size()).toList());
         }
+        List<Candidate> chosen = new ArrayList<>(candidates.stream().limit(maxOffers).toList());
+        // 원소속팀은 항상 제안한다 — 빠졌으면 가장 순위가 낮은 구단 자리를 대신한다
+        if (currentTeam != null && !chosen.contains(currentTeam)) {
+            if (chosen.size() >= maxOffers) {
+                chosen.remove(chosen.size() - 1);
+            }
+            chosen.add(0, currentTeam);
+        }
         int count = 0;
-        for (Candidate c : candidates.stream().limit(maxOffers).toList()) {
+        for (Candidate c : chosen) {
             int years = ContractRules.freeAgentYears(player.getAge(), dice.nextDouble());
             offerRepository.save(new ContractOffer(player.getId(), year, Kind.FREE_AGENCY, c.team().getTeam(), years,
                     c.salary(), Payroll.marketValue(value)));
