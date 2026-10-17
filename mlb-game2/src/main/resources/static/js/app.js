@@ -82,3 +82,15 @@
         document.querySelectorAll('[data-count]').forEach(countUp);
     });
 })();
+
+// 계약 화면: 제안마다 하나인 "트레이드 거부 조항" 체크박스 값을 그 제안의 수락·청문회·역제안 폼에 실어 보낸다.
+// 폼: data-ntc="체크박스 id", 안에 <input type="hidden" name="noTradeClause">
+document.addEventListener('submit', function (event) {
+    'use strict';
+    var form = event.target;
+    var sourceId = form.getAttribute && form.getAttribute('data-ntc');
+    if (!sourceId) return;
+    var box = document.getElementById(sourceId);
+    var field = form.querySelector('input[name="noTradeClause"]');
+    if (box && field) field.value = box.checked ? 'true' : 'false';
+});

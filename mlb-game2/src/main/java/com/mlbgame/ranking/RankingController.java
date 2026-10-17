@@ -38,7 +38,7 @@ public class RankingController {
         model.addAttribute("categories", RankingCategory.values());
         model.addAttribute("periods", Period.values());
         model.addAttribute("rows", rankingService.top(category, period));
-        model.addAttribute("myUserId", authUser.getId());
+        model.addAttribute("myUserId", authUser == null ? null : authUser.getId());   // 비로그인 열람 가능
         return "ranking/list";
     }
 

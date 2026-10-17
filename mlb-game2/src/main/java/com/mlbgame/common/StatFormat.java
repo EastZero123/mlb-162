@@ -30,6 +30,29 @@ public class StatFormat {
         return new DecimalFormat("0.0").format(value);
     }
 
+    /** 비율 → "12.3%" */
+    public String pct(double value) {
+        return new DecimalFormat("0.0").format(value * 100) + "%";
+    }
+
+    /** 리그 평균 100 기준 지수 (wRC+·OPS+·ERA+·FIP−): 반올림 정수, 값이 없으면 "-" */
+    public String index(Double value) {
+        return value == null ? "-" : String.valueOf(Math.round(value));
+    }
+
+    /** WAR: 소수 첫째 자리, 값이 없으면 "-" */
+    public String war(Double value) {
+        if (value == null) {
+            return "-";
+        }
+        return Math.abs(value) < 0.05 ? "0.0" : new DecimalFormat("0.0").format(value);   // "-0.0" 방지
+    }
+
+    /** FIP 등 소수 둘째 자리, 값이 없으면 "-" */
+    public String twoOrDash(Double value) {
+        return value == null ? "-" : two(value);
+    }
+
     /** $1,234,567 */
     public String money(long value) {
         return "$" + NumberFormat.getIntegerInstance(Locale.US).format(value);

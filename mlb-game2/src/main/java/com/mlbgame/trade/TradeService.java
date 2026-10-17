@@ -11,6 +11,8 @@ import com.mlbgame.league.world.NpcStatus;
 import com.mlbgame.league.world.WorldTeam;
 import com.mlbgame.league.world.WorldTeamRepository;
 import com.mlbgame.player.Player;
+import com.mlbgame.reputation.ReputationRules;
+import com.mlbgame.reputation.ReputationService;
 import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.SeasonProgressException;
 import com.mlbgame.trade.TradeEvent.Kind;
@@ -33,14 +35,17 @@ public class TradeService {
     private final NpcPlayerRepository npcPlayerRepository;
     private final TradeEventRepository repository;
     private final Dice dice;
+    private final ReputationService reputationService;
 
     public TradeService(StandingsService standingsService, WorldTeamRepository worldTeamRepository,
-                        NpcPlayerRepository npcPlayerRepository, TradeEventRepository repository, Dice dice) {
+                        NpcPlayerRepository npcPlayerRepository, TradeEventRepository repository, Dice dice,
+                        ReputationService reputationService) {
         this.standingsService = standingsService;
         this.worldTeamRepository = worldTeamRepository;
         this.npcPlayerRepository = npcPlayerRepository;
         this.repository = repository;
         this.dice = dice;
+        this.reputationService = reputationService;
     }
 
     /**
@@ -51,12 +56,13 @@ public class TradeService {
     @Transactional
     public TradeEvent afterSeries(Player player, PlayerSeason season, int seriesNo, LeagueWorld world,
                                   Map<Integer, int[]> myMlbResults) {
-        if (!TradeRules.inWindow(seriesNo, season.getLeagueLevel()) || season.isSidelined()) {
+        if (!TradeRules.inWindow(seriesNo, season.getLeagueLevel()) || season.isSidelined()
+                || player.isNoTradeClause()) {                  // 거부 조항: 구단 주도 트레이드·루머 없음
             return null;
         }
         Context ctx = context(player, season, seriesNo, world, myMlbResults);
         double chance = TradeRules.chance(ctx.winPct.getOrDefault(player.getTeam().getId(), 0.5), player.getOverall(),
-                player.getSalary(), ctx.overBudget, requestDenied(player, season));
+                player.getSalary(), ctx.overBudget, requestDenied(player, season), player.getReputation());
         if (dice.nextDouble() >= chance) {
             return null;
         }
@@ -68,7 +74,10 @@ public class TradeService {
         return execute(player, season, seriesNo, ctx, "트레이드 마감 전 전격 이적");
     }
 
-    /** 유저의 트레이드 요청 (시즌당 1회, 마감 전까지) */
+    /**
+     * 유저의 트레이드 요청 (시즌당 1회, 마감 전까지).
+     * player·season 은 호출하는 트랜잭션의 영속 엔티티여야 한다 — {@code SeasonService.requestTrade} 를 통해 호출.
+     */
     @Transactional
     public TradeEvent request(Player player, PlayerSeason season, LeagueWorld world, Map<Integer, int[]> myMlbResults) {
         int seriesNo = season.getSeriesPlayed();
@@ -81,11 +90,23 @@ public class TradeService {
             throw new SeasonProgressException("이번 시즌에는 더 이상 트레이드를 요청할 수 없습니다.");
         }
         Context ctx = context(player, season, Math.max(1, seriesNo), world, myMlbResults);
-        if (dice.nextDouble() < TradeRules.REQUEST_SUCCESS) {
-            return execute(player, season, seriesNo, ctx, "트레이드 요청 수용");
+        if (dice.nextDouble() < TradeRules.requestSuccess(player.getReputation())) {
+            boolean waived = player.isNoTradeClause();
+            player.waiveNoTradeClause();                     // 스스로 요청했으니 거부 조항은 소멸
+            reputationService.change(player, season.getSeasonYear(), ReputationRules.TRADE_REQUEST_GRANTED, "트레이드 요청");
+            return execute(player, season, seriesNo, ctx,
+                    waived ? "트레이드 요청 수용 (거부 조항 소멸)" : "트레이드 요청 수용");
         }
+        int lost = reputationService.change(player, season.getSeasonYear(), ReputationRules.TRADE_REQUEST_DENIED,
+                "트레이드 요청 거절당함");
         return repository.save(new TradeEvent(player.getId(), season.getSeasonYear(), seriesNo, Kind.REQUEST_DENIED,
-                player.getTeam().getId(), null, "구단이 트레이드 요청을 거절했습니다. 관계가 틀어져 이후 트레이드될 가능성이 커졌습니다"));
+                player.getTeam().getId(), null, "구단이 트레이드 요청을 거절했습니다. 관계가 틀어져 이후 트레이드될 가능성이 커졌습니다"
+                + (lost != 0 ? " (평판 " + lost + ")" : "")));
+    }
+
+    /** 지금 트레이드를 요청하면 성사될 확률 (화면 표시용) */
+    public double requestSuccessChance(Player player) {
+        return TradeRules.requestSuccess(player.getReputation());
     }
 
     @Transactional(readOnly = true)

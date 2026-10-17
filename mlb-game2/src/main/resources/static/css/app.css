@@ -448,3 +448,24 @@ a.btn { text-decoration: none; text-align: center; }
     .reveal-all .reveal, .award-banner.celebrate { animation: none; }
     .season-progress-fill { transition: none; }
 }
+
+/* 패치노트 */
+.patch-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px;
+    padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.patch-head .section-title { margin: 0; }
+.patch-version { color: var(--primary); margin-right: 6px; }
+.patch-kind { font-size: 14px; margin: 14px 0 6px; color: var(--muted); }
+.patch-list { margin: 0; padding-left: 20px; line-height: 1.7; }
+.auth-public { margin-top: 8px; }
+
+/* 기록표: 합계·통산 행, 우승 표시 */
+.stat-table tr.total-row td { font-weight: 700; border-top: 1px solid var(--border); }
+.champion-mark { margin-left: 4px; }
+.champion-banner { margin-top: 8px; }
+
+/* 평판 · 트레이드 거부 조항 */
+.reputation { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.reputation .bar { flex: 1; }
+.reputation-value { font-size: 22px; font-weight: 700; min-width: 2.5em; }
+.ntc-option { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; font-size: 14px; }
+.trade-note { margin: 4px 0 0; }

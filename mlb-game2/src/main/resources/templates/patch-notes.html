@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('패치노트')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow">
+    <h1 class="page-title">패치노트</h1>
+    <p class="muted">업데이트 내역입니다. 최신 패치가 위에 있어요.</p>
+
+    <!--
+        새 패치를 추가하는 방법: 아래 빈 틀을 복사해 이 주석 바로 아래(가장 위)에 붙여 넣고 내용만 바꾸세요.
+        - 버전·날짜: patch-version / time 태그
+        - 분류: "버그 수정", "개선", "신규" 등 <h3> 단위로 나눕니다 (안 쓰는 분류는 통째로 지우세요)
+        - 항목: <li> 한 줄에 하나
+
+        <article class="card section patch-note">
+            <header class="patch-head">
+                <h2 class="section-title"><span class="patch-version">v0.0.2</span> 패치 제목</h2>
+                <time class="muted small" datetime="2026-01-01">2026.01.01</time>
+            </header>
+            <h3 class="patch-kind">버그 수정</h3>
+            <ul class="patch-list">
+                <li>수정한 내용</li>
+            </ul>
+            <h3 class="patch-kind">개선</h3>
+            <ul class="patch-list">
+                <li>바뀐 내용</li>
+            </ul>
+            <h3 class="patch-kind">신규</h3>
+            <ul class="patch-list">
+                <li>추가된 기능</li>
+            </ul>
+        </article>
+    -->
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.2</span>
+                플레이 피드백 반영 · 기록 개편 · 평판 시스템
+            </h2>
+            <time class="muted small" datetime="2026-10-17">2026.10.17</time>
+        </header>
+
+        <h3 class="patch-kind">버그 수정</h3>
+        <ul class="patch-list">
+            <li>트레이드 요청이 수락됐는데도 실제 소속 구단이 바뀌지 않던 문제를 수정했습니다.</li>
+            <li>FA 역제안 때 "유효한 값을 입력해주세요" 오류창이 뜨던 문제를 수정했습니다. 금액은 $10,000 단위로 자동 반올림됩니다.</li>
+            <li>FA 자격을 얻어도 원소속팀의 단기 계약만 들어오던 문제를 수정했습니다. 이제 여러 구단이 서로 다른 조건으로 오퍼를 보냅니다.</li>
+            <li>부상 중에 시즌이 끝나면 다음 시즌까지 부상이 남아 보이던 문제를 수정했습니다. 시즌을 넘어가면(연봉 갱신 단계) 완전히 회복합니다.</li>
+            <li>노화로 훈련 비용이 줄었을 때 진행도가 "6/4"처럼 넘쳐 보이던 문제를 수정했습니다. 넘친 진행도로 바로 능력치가 오르고 남은 진행도는 이월됩니다.</li>
+        </ul>
+
+        <h3 class="patch-kind">개선</h3>
+        <ul class="patch-list">
+            <li>시즌 기록을 연도·레벨·구단별로 나눠 보여줍니다. 콜업·콜다운으로 같은 레벨을 오가도 한 줄로 합치고, 시즌 중 트레이드되면 팀별 기록과 합계가 따로 나옵니다.</li>
+            <li>커리어 기록을 메이저리그·마이너리그 표로 나누고, 포스트시즌 기록을 별도 표로 보여줍니다.</li>
+            <li>예산이 빠듯한 구단도 금액을 낮춰 FA 오퍼를 보냅니다.</li>
+        </ul>
+
+        <h3 class="patch-kind">신규</h3>
+        <ul class="patch-list">
+            <li>세부 지표를 추가했습니다. 타자 ISO·BABIP·BB%·K%·wOBA·wRC+·OPS+·WAR, 투수 K%·BB%·K−BB%·FIP·ERA+·FIP−·WAR (리그 평균이 필요한 지표는 메이저리그만 계산).</li>
+            <li>수비 기록(수비 기회, 막은 안타, 실책, 보살, 막은 실점, 포수 도루 저지)을 시즌·커리어 누적으로 보여줍니다.</li>
+            <li>월드시리즈 우승 기록을 커리어에 표시합니다. 메이저 소속으로 시즌을 마친 팀이 우승하면 인정되고, 명예의 전당 점수 +5점이 더해집니다.</li>
+            <li>평판 시스템을 도입했습니다. 트레이드 요청 성공률, 역제안 결렬 위험, FA 오퍼 수, 연장 제안 확률에 영향을 주며, 트레이드 요청 거절·역제안 결렬 등으로 떨어지고 제시 조건 수락·수상·우승으로 오릅니다.</li>
+            <li>계약할 때 트레이드 거부 조항을 넣을 수 있습니다. 조항이 있으면 구단 주도 트레이드가 일어나지 않으며, 직접 요청한 트레이드는 가능합니다.</li>
+            <li>트레이드 요청 성공 확률과 역제안 수락 확률을 화면에 표시합니다.</li>
+            <li>패치노트 페이지를 추가했습니다. 로그인하지 않아도 랭킹·은퇴 선수 프로필·패치노트를 볼 수 있습니다.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.1</span>
+                밸런스 패치
+            </h2>
+            <time class="muted small" datetime="2026-10-16">2026.10.16</time>
+        </header>
+
+        <h3 class="patch-kind">개선</h3>
+        <ul class="patch-list">
+            <li>오버롤 100에 도달하는 난이도를 높였으며 90~95구간 95~100구간에 대한 기록 성장 체감을 상승 시켰습니다.</li>
+            <li>페이롤 시스템을 도입하였으며 팀 전력과 연관됩니다.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.0</span>
+                오픈
+            </h2>
+            <time class="muted small" datetime="2026-10-15">2026.10.15</time>
+        </header>
+
+        <h3 class="patch-kind">신규</h3>
+        <ul class="patch-list">
+            <li>게임의 첫 버전입니다.</li>
+        </ul>
+    </article>
+</main>
+</body>
+</html>

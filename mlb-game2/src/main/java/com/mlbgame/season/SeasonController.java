@@ -5,7 +5,7 @@ import com.mlbgame.award.AwardService;
 import com.mlbgame.award.StatPointLog;
 import com.mlbgame.award.StatPointService;
 import com.mlbgame.contract.ContractService;
-import com.mlbgame.league.world.LeagueWorldService;
+import com.mlbgame.league.world.LeagueWorldRepository;
 import com.mlbgame.trade.TradeEvent;
 import com.mlbgame.trade.TradeService;
 import com.mlbgame.player.Attribute;
@@ -20,6 +20,7 @@ import com.mlbgame.training.InvalidTrainingException;
 import com.mlbgame.training.TrainingLog;
 import com.mlbgame.training.TrainingService;
 import java.util.List;
+import java.util.Map;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -47,17 +48,22 @@ public class SeasonController {
     private final SeasonTransitionService transitionService;
     private final ContractService contractService;
     private final TradeService tradeService;
-    private final LeagueWorldService leagueWorldService;
+    private final SeasonSplits seasonSplits;
+    private final SeasonMetrics seasonMetrics;
+    private final LeagueWorldRepository leagueWorldRepository;
 
     public SeasonController(PlayerService playerService, SeasonService seasonService,
                             TrainingService trainingService, EarningsService earningsService,
                             StatPointService statPointService, AwardService awardService,
                             SeasonTransitionService transitionService, ContractService contractService,
-                            TradeService tradeService, LeagueWorldService leagueWorldService) {
+                            TradeService tradeService, SeasonSplits seasonSplits, SeasonMetrics seasonMetrics,
+                            LeagueWorldRepository leagueWorldRepository) {
         this.transitionService = transitionService;
         this.contractService = contractService;
         this.tradeService = tradeService;
-        this.leagueWorldService = leagueWorldService;
+        this.seasonSplits = seasonSplits;
+        this.seasonMetrics = seasonMetrics;
+        this.leagueWorldRepository = leagueWorldRepository;
         this.playerService = playerService;
         this.seasonService = seasonService;
         this.trainingService = trainingService;
@@ -79,6 +85,7 @@ public class SeasonController {
         model.addAttribute("readyForNext", transitionService.ready(playerId, season));
         model.addAttribute("contractPending", contractService.hasPending(playerId));
         model.addAttribute("canRequestTrade", !player.isRetired() && tradeService.canRequest(player, season));
+        model.addAttribute("tradeChance", Math.round(100 * tradeService.requestSuccessChance(player)));   // 평판 반영
         model.addAttribute("tradeEvents", tradeService.seasonEvents(playerId, season.getSeasonYear()));
         return "season/hub";
     }
@@ -88,14 +95,13 @@ public class SeasonController {
     public String requestTrade(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long playerId,
                                RedirectAttributes redirectAttributes) {
         try {
-            Player player = playerService.getOwned(authUser.getId(), playerId);
-            PlayerSeason season = seasonService.currentSeason(authUser.getId(), playerId);
-            TradeEvent event = tradeService.request(player, season, leagueWorldService.getOrCreate(playerId),
-                    seasonService.mlbSeason(authUser.getId(), playerId).teamResults());
+            TradeEvent event = seasonService.requestTrade(authUser.getId(), playerId);
             redirectAttributes.addFlashAttribute(event.getKind() == TradeEvent.Kind.TRADE ? "trainedMessage" : "errorMessage",
                     event.getNote());
         } catch (SeasonProgressException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (ObjectOptimisticLockingFailureException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
         }
         return "redirect:/players/" + playerId + "/season";
     }
@@ -187,9 +193,11 @@ public class SeasonController {
         PlayerSeason season = seasonService.currentSeason(authUser.getId(), playerId);
         model.addAttribute("player", player);
         model.addAttribute("season", season);
-        model.addAttribute("batting", seasonService.batting(season));
-        model.addAttribute("pitching", seasonService.pitching(season));
-        model.addAttribute("fielding", seasonService.fielding(season));
+        SeasonSplits.Tables splits = seasonSplits.season(playerId, season.getSeasonYear());   // 레벨·구단별
+        model.addAttribute("splits", splits);
+        model.addAttribute("detail", seasonMetrics.detail(splits, player.getPosition(), player.isPitcher(),
+                leagueWorldRepository.findByPlayerId(playerId).orElse(null),
+                Map.of(season.getSeasonYear(), season.getSeriesPlayed())));
         model.addAttribute("log", seasonService.seriesLog(authUser.getId(), playerId));
         model.addAttribute("trainings", trainingService.history(playerId, season.getSeasonYear()));
         model.addAttribute("careerEarnings", earningsService.careerTotal(playerId));

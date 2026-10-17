@@ -38,6 +38,12 @@ public class HomeController {
         return "redirect:/dashboard";
     }
 
+    /** 패치노트 (로그인 없이 공개). 내용은 templates/patch-notes.html 에 직접 작성 */
+    @GetMapping("/patch-notes")
+    public String patchNotes() {
+        return "patch-notes";
+    }
+
     @GetMapping("/dashboard")
     public String dashboard(@AuthenticationPrincipal AuthUser authUser, Model model) {
         List<Player> players = playerService.listActive(authUser.getId());

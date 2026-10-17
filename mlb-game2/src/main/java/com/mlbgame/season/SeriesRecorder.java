@@ -36,10 +36,10 @@ public class SeriesRecorder {
     }
 
     @Transactional
-    public PlayedSeries play(Long playerId, int seasonYear, int seriesNo, SeriesInput input) {
+    public PlayedSeries play(Long playerId, int seasonYear, int seriesNo, Long teamId, SeriesInput input) {
         SeriesResult result = simulator.simulate(input);
         SeriesRecord record = repository.save(new SeriesRecord(playerId, seasonYear, seriesNo, input.seed(),
-                input.level(), toJson(input), result.wins(), result.losses(), toJson(SeriesSummary.of(result))));
+                input.level(), teamId, toJson(input), result.wins(), result.losses(), toJson(SeriesSummary.of(result))));
         return new PlayedSeries(record, result);
     }
 

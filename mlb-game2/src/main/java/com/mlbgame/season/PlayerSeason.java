@@ -199,6 +199,12 @@ public class PlayerSeason extends BaseTimeEntity {
         return mlbSeriesPlayed;
     }
 
+    /** 오프시즌 회복: 시즌이 끝나 다음 시즌으로 넘어가면 남은 부상 결장은 모두 지운다 */
+    public void recoverFromInjury() {
+        this.injurySeverity = null;
+        this.injuredSeriesRemaining = 0;
+    }
+
     /** 테스트·관리용: 부상 결장 시리즈를 직접 지정 */
     public void injure(String severity, int seriesOut) {
         this.injurySeverity = severity;

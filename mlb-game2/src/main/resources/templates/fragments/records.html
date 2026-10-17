@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+    기록표 조각 — 커리어 화면·시즌 기록 화면 공용. rows 는 SeasonSplits.Row 목록.
+    showYear: 연도 칸 표시 여부 (한 시즌 화면에서는 false)
+-->
+
+<!-- 행 이름: 구단(레벨) / 합계 (N팀) / 통산 -->
+<th:block th:fragment="label(r)">
+    <th:block th:if="${r.split}">
+        <span th:text="${@fmt.teamName(r.team(), r.level())}">뉴욕 양키스</span>
+        <span class="champion-mark" th:if="${r.champion()}" title="월드시리즈 우승">🏆</span>
+    </th:block>
+    <th:block th:if="${r.kind().name() == 'YEAR_TOTAL'}" th:text="'합계 (' + ${r.teamCount()} + '팀)'">합계 (2팀)</th:block>
+    <th:block th:if="${r.kind().name() == 'CAREER_TOTAL'}">통산</th:block>
+</th:block>
+
+<div th:fragment="batting(rows, showYear)" class="table-wrap">
+    <table class="stat-table">
+        <thead>
+        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th>G</th><th>PA</th><th>AB</th><th>H</th>
+            <th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>SO</th><th>SB</th>
+            <th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th>득점권</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${rows}" th:with="b=${r.batting()}" th:classappend="${r.total} ? 'total-row'">
+            <td th:if="${showYear}" th:text="${r.year()}">2026</td>
+            <td class="left"><th:block th:replace="~{fragments/records :: label(${r})}"></th:block></td>
+            <td th:text="${b.games}">0</td>
+            <td th:text="${b.plateAppearances}">0</td>
+            <td th:text="${b.atBats}">0</td>
+            <td th:text="${b.hits}">0</td>
+            <td th:text="${b.doubles}">0</td>
+            <td th:text="${b.triples}">0</td>
+            <td th:text="${b.homeRuns}">0</td>
+            <td th:text="${b.runs}">0</td>
+            <td th:text="${b.rbi}">0</td>
+            <td th:text="${b.walks}">0</td>
+            <td th:text="${b.strikeouts}">0</td>
+            <td th:text="${b.stolenBases}">0</td>
+            <td th:text="${@fmt.rate(b.average)}">.000</td>
+            <td th:text="${@fmt.rate(b.obp)}">.000</td>
+            <td th:text="${@fmt.rate(b.slg)}">.000</td>
+            <td th:text="${@fmt.rate(b.ops)}">.000</td>
+            <td th:text="${@fmt.rate(b.rispAverage)}">.000</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:fragment="pitching(rows, showYear)" class="table-wrap">
+    <table class="stat-table">
+        <thead>
+        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th>G</th><th>GS</th><th>W</th><th>L</th>
+            <th>SV</th><th>BS</th><th>IP</th><th>H</th><th>R</th><th>BB</th><th>SO</th><th>HR</th>
+            <th>ERA</th><th>WHIP</th><th>K/9</th><th>BB/9</th><th>QS</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${rows}" th:with="t=${r.pitching()}" th:classappend="${r.total} ? 'total-row'">
+            <td th:if="${showYear}" th:text="${r.year()}">2026</td>
+            <td class="left"><th:block th:replace="~{fragments/records :: label(${r})}"></th:block></td>
+            <td th:text="${t.games}">0</td>
+            <td th:text="${t.gamesStarted}">0</td>
+            <td th:text="${t.wins}">0</td>
+            <td th:text="${t.losses}">0</td>
+            <td th:text="${t.saves}">0</td>
+            <td th:text="${t.blownSaves}">0</td>
+            <td th:text="${t.innings}">0.0</td>
+            <td th:text="${t.hits}">0</td>
+            <td th:text="${t.runs}">0</td>
+            <td th:text="${t.walks}">0</td>
+            <td th:text="${t.strikeouts}">0</td>
+            <td th:text="${t.homeRuns}">0</td>
+            <td th:text="${@fmt.two(t.era)}">0.00</td>
+            <td th:text="${@fmt.two(t.whip)}">0.00</td>
+            <td th:text="${@fmt.two(t.strikeoutsPerNine)}">0.00</td>
+            <td th:text="${@fmt.two(t.walksPerNine)}">0.00</td>
+            <td th:text="${t.qualityStarts}">0</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 세부 지표 — rows 는 SeasonMetrics.DetailRow 목록. 리그 평균이 필요한 지표는 마이너에서 "-" -->
+<div th:fragment="detailHitting(rows, showYear)" class="table-wrap">
+    <table class="stat-table">
+        <thead>
+        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th>
+            <th title="순장타율 (SLG − AVG)">ISO</th><th title="인플레이 타구 타율">BABIP</th>
+            <th title="타석당 볼넷">BB%</th><th title="타석당 삼진">K%</th>
+            <th title="가중 출루율">wOBA</th><th title="리그 평균 100">wRC+</th><th title="리그 평균 100">OPS+</th>
+            <th title="대체 선수 대비 승리 기여">WAR</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="d : ${rows}" th:with="r=${d.row()},h=${d.hitter()}" th:classappend="${r.total} ? 'total-row'">
+            <td th:if="${showYear}" th:text="${r.year()}">2026</td>
+            <td class="left"><th:block th:replace="~{fragments/records :: label(${r})}"></th:block></td>
+            <td th:text="${@fmt.rate(h.iso())}">.000</td>
+            <td th:text="${@fmt.rate(h.babip())}">.000</td>
+            <td th:text="${@fmt.pct(h.walkRate())}">0.0%</td>
+            <td th:text="${@fmt.pct(h.strikeoutRate())}">0.0%</td>
+            <td th:text="${@fmt.rate(h.woba())}">.000</td>
+            <td th:text="${@fmt.index(h.wrcPlus())}">-</td>
+            <td th:text="${@fmt.index(h.opsPlus())}">-</td>
+            <td th:text="${@fmt.war(h.war())}">-</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:fragment="detailPitching(rows, showYear)" class="table-wrap">
+    <table class="stat-table">
+        <thead>
+        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th>
+            <th title="상대 타자당 삼진">K%</th><th title="상대 타자당 볼넷">BB%</th><th>K−BB%</th>
+            <th title="수비와 무관한 실점 추정">FIP</th><th title="리그 평균 100, 높을수록 좋음">ERA+</th>
+            <th title="리그 평균 100, 낮을수록 좋음">FIP−</th><th title="대체 선수 대비 승리 기여">WAR</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="d : ${rows}" th:with="r=${d.row()},t=${d.pitcher()}" th:classappend="${r.total} ? 'total-row'">
+            <td th:if="${showYear}" th:text="${r.year()}">2026</td>
+            <td class="left"><th:block th:replace="~{fragments/records :: label(${r})}"></th:block></td>
+            <td th:text="${@fmt.pct(t.strikeoutRate())}">0.0%</td>
+            <td th:text="${@fmt.pct(t.walkRate())}">0.0%</td>
+            <td th:text="${@fmt.pct(t.kMinusBb())}">0.0%</td>
+            <td th:text="${@fmt.twoOrDash(t.fip())}">-</td>
+            <td th:text="${@fmt.index(t.eraPlus())}">-</td>
+            <td th:text="${@fmt.index(t.fipMinus())}">-</td>
+            <td th:text="${@fmt.war(t.war())}">-</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 세부 지표 설명 (표 아래) -->
+<p th:fragment="detailNote" class="muted small">
+    wRC+·OPS+·ERA+ 는 리그 평균이 100(높을수록 좋음), FIP− 는 100(낮을수록 좋음), WAR 는 대체 선수 대비 승리 기여입니다.
+    리그 평균이 필요한 지표는 메이저에서만 계산해요(마이너는 "-"). 진행 중인 시즌은 지금까지의 리그 기록, 이번 업데이트 이전에 끝난 시즌은 기준 리그 평균으로 계산합니다.
+    투수 기록에 자책점 구분이 없어 ERA 는 실점 기준이에요.
+</p>
+
+<!-- 수비 (타자만 — 투수는 수비 기록을 만들지 않는다) -->
+<div th:fragment="fielding(rows, showYear, catcher)" class="table-wrap">
+    <table class="stat-table">
+        <thead>
+        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th title="내 쪽으로 온 인플레이 타구">기회</th>
+            <th title="안타가 될 타구를 막은 횟수">막은 안타</th><th title="범위 부족으로 내준 안타">놓친 타구</th>
+            <th>실책</th><th>보살</th><th title="수비로 아낀 실점 추정">막은 실점</th>
+            <th:block th:if="${catcher}"><th>도루 저지</th><th>저지율</th></th:block></tr>
+        </thead>
+        <tbody>
+        <tr th:each="r : ${rows}" th:if="${r.fielding() != null}" th:with="f=${r.fielding()}"
+            th:classappend="${r.total} ? 'total-row'">
+            <td th:if="${showYear}" th:text="${r.year()}">2026</td>
+            <td class="left"><th:block th:replace="~{fragments/records :: label(${r})}"></th:block></td>
+            <td th:text="${f.chances}">0</td>
+            <td th:text="${f.hitsSaved}">0</td>
+            <td th:text="${f.hitsAllowed}">0</td>
+            <td th:text="${f.errors}">0</td>
+            <td th:text="${f.assists}">0</td>
+            <td th:text="${@fmt.one(f.runsSaved)}">0.0</td>
+            <th:block th:if="${catcher}">
+                <td th:text="${f.caughtStealing} + '/' + ${f.caughtStealing + f.stolenBasesAgainst}">0/0</td>
+                <td th:text="${@fmt.rate(f.caughtStealingRate)}">.000</td>
+            </th:block>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

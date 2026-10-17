@@ -7,6 +7,7 @@ import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -101,5 +102,35 @@ class PlayerTest {
         player.completeCombine();
         player.draft(tigers, LeagueLevel.A);
         assertThat(player.getTeamDisplayName()).isEqualTo("디트로이트 타이거스 A");
+    }
+
+    @Test
+    @Tag("bugfix")
+    void 노화로_훈련_비용이_진행도_아래로_줄면_바로_올리고_남은_진행도는_이월한다() {
+        Player player = hitter(Position.SS, Education.COLLEGE, 90);   // 22세 · 90 → 비용 4
+        for (int i = 0; i < 3; i++) {
+            player.train(Attribute.POWER);
+        }
+        assertThat(player.trainingProgress(Attribute.POWER)).isEqualTo(3);
+
+        List<String> news = player.applyAging(Map.of(Attribute.POWER, -1));   // 89 → 비용 2
+
+        assertThat(player.attribute(Attribute.POWER)).isEqualTo(90);
+        assertThat(player.trainingProgress(Attribute.POWER)).isEqualTo(1);
+        assertThat(player.trainingCost(Attribute.POWER)).isEqualTo(4);
+        assertThat(news).singleElement().asString().contains("파워", "+1", "1/4");
+    }
+
+    @Test
+    @Tag("bugfix")
+    void 노화_후에도_비용이_진행도보다_크면_진행도를_그대로_둔다() {
+        Player player = hitter(Position.SS, Education.COLLEGE, 90);
+        player.train(Attribute.POWER);
+
+        List<String> news = player.applyAging(Map.of(Attribute.POWER, -1));   // 89 → 비용 2, 진행도 1
+
+        assertThat(player.attribute(Attribute.POWER)).isEqualTo(89);
+        assertThat(player.trainingProgress(Attribute.POWER)).isEqualTo(1);
+        assertThat(news).isEmpty();
     }
 }

@@ -18,8 +18,32 @@
             <div><dt>남은 연수</dt><dd th:text="${player.contractType.name() == 'NONE'} ? '-' : ${player.contractYears} + '년'">1년</dd></div>
             <div><dt>서비스 연수</dt><dd th:text="${serviceYears} + '년'">0년</dd></div>
             <div><dt>커리어 수령액</dt><dd th:text="${@fmt.money(careerEarnings)}">$0</dd></div>
+            <div><dt>트레이드 거부권</dt>
+                <dd th:text="${player.noTradeClause} ? '있음 · 구단 주도 트레이드 없음' : '없음'">없음</dd></div>
         </dl>
         <p class="muted small">서비스 3~5년은 연봉조정, 6년 이후 계약이 끝나면 FA가 됩니다. 메이저에서 46시리즈를 뛰면 서비스 1년이에요.</p>
+    </section>
+
+    <!-- 평판 -->
+    <section class="card section">
+        <h2 class="section-title">평판</h2>
+        <div class="reputation">
+            <span class="reputation-value" th:text="${player.reputation}">50</span>
+            <span class="bar"><span class="bar-fill" th:style="'width:' + ${player.reputation} + '%'"></span></span>
+            <span class="badge badge-info" th:text="${reputationGrade}">보통</span>
+        </div>
+        <p class="muted small">
+            평판이 높을수록 트레이드 요청이 잘 받아들여지고, 역제안 결렬 위험이 줄고, 연장 제안·FA 오퍼가 늘어요.
+            트레이드 요청이 거절되거나(−8) 역제안이 결렬되면(−5) 떨어지고, 제시 조건 수락(+2)·수상·우승으로 오릅니다.
+        </p>
+        <ul class="schedule-list" th:unless="${#lists.isEmpty(reputationLogs)}">
+            <li th:each="r : ${reputationLogs}">
+                <span class="muted" th:text="${r.seasonYear}">2030</span>
+                <span th:text="${r.reason}">사유</span>
+                <span class="badge" th:classappend="${r.delta > 0} ? 'badge-win' : 'badge-lose'" th:text="${r.deltaLabel}">+2</span>
+                <small class="muted" th:text="'→ ' + ${r.reputationAfter}">→ 52</small>
+            </li>
+        </ul>
     </section>
 
     <section class="card section" th:if="${#lists.isEmpty(offers)}">
@@ -36,33 +60,50 @@
             <span class="muted" th:if="${o.years > 1}" th:text="'(총 ' + ${@fmt.money(o.totalValue)} + ')'">총액</span>
         </p>
 
+        <label class="ntc-option">
+            <input type="checkbox" th:id="'ntc-' + ${o.id}">
+            트레이드 거부 조항 포함 <span class="muted small">— 이 계약 동안 구단 주도 트레이드 없음 (직접 요청은 가능)</span>
+        </label>
+
         <div class="offer-actions">
-            <form th:action="@{/players/{p}/contract/{o}/accept(p=${player.id},o=${o.id})}" method="post">
+            <form th:action="@{/players/{p}/contract/{o}/accept(p=${player.id},o=${o.id})}" method="post"
+                  th:attr="data-ntc='ntc-' + ${o.id}">
+                <input type="hidden" name="noTradeClause" value="false">
                 <button type="submit" class="btn btn-primary">수락</button>
             </form>
 
             <form th:if="${o.kind.name() == 'ARBITRATION'}" class="ask-form"
-                  th:action="@{/players/{p}/contract/{o}/arbitrate(p=${player.id},o=${o.id})}" method="post">
-                <input type="number" name="ask" step="10000" th:min="${o.salary}" th:value="${o.salary + 500000}" required>
+                  th:action="@{/players/{p}/contract/{o}/arbitrate(p=${player.id},o=${o.id})}" method="post"
+                  th:attr="data-ntc='ntc-' + ${o.id}">
+                <input type="hidden" name="noTradeClause" value="false">
+                <input type="number" name="ask" step="1" th:min="${o.salary}" th:value="${o.salary + 500000}" required>
                 <button type="submit" class="btn btn-ghost">청문회 신청</button>
             </form>
             <p class="muted small" th:if="${o.kind.name() == 'ARBITRATION'}">
                 청문회는 적정 연봉에 더 가까운 쪽 금액으로 결정돼요. 너무 높게 부르면 구단 제시액이 채택됩니다.
+                청문회에서 이기면 구단과 관계가 틀어져 평판이 3 떨어집니다.
             </p>
 
             <form th:if="${o.kind.name() == 'FREE_AGENCY'}" class="ask-form"
-                  th:action="@{/players/{p}/contract/{o}/counter(p=${player.id},o=${o.id})}" method="post">
-                <input type="number" name="ask" step="10000" th:min="${o.salary}" th:value="${o.salary * 11 / 10}" required>
+                  th:action="@{/players/{p}/contract/{o}/counter(p=${player.id},o=${o.id})}" method="post"
+                  th:attr="data-ntc='ntc-' + ${o.id}">
+                <input type="hidden" name="noTradeClause" value="false">
+                <input type="number" name="ask" step="1" th:min="${o.salary}" th:value="${o.salary * 11 / 100000 * 10000}" required>
                 <button type="submit" class="btn btn-ghost">역제안</button>
             </form>
-            <p class="muted small" th:if="${o.kind.name() == 'FREE_AGENCY'}">
-                오퍼보다 높게 부를수록 구단이 협상을 접을 확률이 커져요 (10% 높으면 약 30% 결렬).
+            <p class="muted small counter-preview" th:if="${o.kind.name() == 'FREE_AGENCY'}">
+                현재 평판 기준 역제안 수락 확률 —
+                <th:block th:each="e, st : ${counterPreview}">
+                    <span th:text="'오퍼보다 ' + ${e.key} + '% 높으면 약 ' + ${e.value} + '%'">10% 높으면 약 70%</span><th:block th:unless="${st.last}"> · </th:block>
+                </th:block>
+                <br>결렬되면 그 구단은 협상에서 철수하고 평판이 5 떨어집니다.
             </p>
 
             <form th:if="${o.kind.name() != 'ARBITRATION'}"
                   th:action="@{/players/{p}/contract/{o}/decline(p=${player.id},o=${o.id})}" method="post">
                 <button type="submit" class="btn btn-ghost">거절</button>
             </form>
+            <p class="muted small" th:if="${o.kind.name() == 'EXTENSION'}">연장 제안을 거절하면 평판이 2 떨어집니다.</p>
         </div>
     </section>
 

@@ -75,6 +75,10 @@ public class ContractOffer extends BaseTimeEntity {
     @Column(length = 255)
     private String note;
 
+    /** 트레이드 거부 조항을 넣고 계약했는지 (계약 이력 표시용) */
+    @Column(name = "no_trade_clause", nullable = false)
+    private boolean noTradeClause;
+
     protected ContractOffer() {
     }
 
@@ -89,7 +93,8 @@ public class ContractOffer extends BaseTimeEntity {
         this.status = Status.PENDING;
     }
 
-    void accept(long finalSalary, String note) {
+    void accept(long finalSalary, String note, boolean noTradeClause) {
+        this.noTradeClause = noTradeClause;
         this.salary = finalSalary;
         this.status = Status.ACCEPTED;
         this.note = note;
@@ -98,6 +103,10 @@ public class ContractOffer extends BaseTimeEntity {
     void reject(String note) {
         this.status = Status.REJECTED;
         this.note = note;
+    }
+
+    public boolean isNoTradeClause() {
+        return noTradeClause;
     }
 
     public boolean isPending() {

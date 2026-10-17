@@ -3,6 +3,8 @@ package com.mlbgame.contract;
 import com.mlbgame.auth.AuthUser;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
+import com.mlbgame.reputation.ReputationRules;
+import com.mlbgame.reputation.ReputationService;
 import com.mlbgame.season.SeasonProgressException;
 import com.mlbgame.season.earnings.EarningsService;
 import com.mlbgame.training.InvalidTrainingException;
@@ -26,12 +28,14 @@ public class ContractController {
     private final PlayerService playerService;
     private final ContractService contractService;
     private final EarningsService earningsService;
+    private final ReputationService reputationService;
 
     public ContractController(PlayerService playerService, ContractService contractService,
-                              EarningsService earningsService) {
+                              EarningsService earningsService, ReputationService reputationService) {
         this.playerService = playerService;
         this.contractService = contractService;
         this.earningsService = earningsService;
+        this.reputationService = reputationService;
     }
 
     @GetMapping
@@ -42,25 +46,34 @@ public class ContractController {
         model.addAttribute("offers", contractService.pending(playerId));
         model.addAttribute("history", contractService.history(playerId));
         model.addAttribute("careerEarnings", earningsService.careerTotal(playerId));
+        model.addAttribute("reputationGrade", ReputationRules.grade(player.getReputation()));
+        model.addAttribute("reputationLogs", reputationService.recent(playerId));
+        model.addAttribute("counterPreview", ContractService.counterPreview(player.getReputation()));
         return "contract/overview";
     }
 
+    /** noTradeClause: 계약에 트레이드 거부 조항을 넣을지 (체크박스, 조건·대가 없음) */
     @PostMapping("/{offerId}/accept")
     public String accept(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long playerId,
-                         @PathVariable Long offerId, RedirectAttributes ra) {
-        return handle(playerId, ra, () -> contractService.accept(authUser.getId(), playerId, offerId));
+                         @PathVariable Long offerId, @RequestParam(defaultValue = "false") boolean noTradeClause,
+                         RedirectAttributes ra) {
+        return handle(playerId, ra, () -> contractService.accept(authUser.getId(), playerId, offerId, noTradeClause));
     }
 
     @PostMapping("/{offerId}/arbitrate")
     public String arbitrate(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long playerId,
-                            @PathVariable Long offerId, @RequestParam long ask, RedirectAttributes ra) {
-        return handle(playerId, ra, () -> contractService.arbitrate(authUser.getId(), playerId, offerId, ask));
+                            @PathVariable Long offerId, @RequestParam long ask,
+                            @RequestParam(defaultValue = "false") boolean noTradeClause, RedirectAttributes ra) {
+        return handle(playerId, ra,
+                () -> contractService.arbitrate(authUser.getId(), playerId, offerId, ask, noTradeClause));
     }
 
     @PostMapping("/{offerId}/counter")
     public String counter(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long playerId,
-                          @PathVariable Long offerId, @RequestParam long ask, RedirectAttributes ra) {
-        return handle(playerId, ra, () -> contractService.counter(authUser.getId(), playerId, offerId, ask));
+                          @PathVariable Long offerId, @RequestParam long ask,
+                          @RequestParam(defaultValue = "false") boolean noTradeClause, RedirectAttributes ra) {
+        return handle(playerId, ra,
+                () -> contractService.counter(authUser.getId(), playerId, offerId, ask, noTradeClause));
     }
 
     @PostMapping("/{offerId}/decline")

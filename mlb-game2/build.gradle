@@ -39,9 +39,33 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// 사용자 폴더 이름에 한글이 있으면 Mockito 에이전트가 붙지 못해 테스트가 실패하므로 임시 폴더를 프로젝트 안으로
+tasks.withType(Test).configureEach {
+    def tmp = layout.buildDirectory.dir('tmp/test-jvm').get().asFile
+    doFirst { tmp.mkdirs() }
+    systemProperty 'java.io.tmpdir', tmp.absolutePath
+    environment 'TMP', tmp.absolutePath
+    environment 'TEMP', tmp.absolutePath
+}
+
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'balance', 'career'   // 오래 걸리는 밸런스 검증은 balanceTest·careerTest 로 분리
+    }
+}
+
+// 0.0.2 패치(버그 수정·기록 개편) 검증 테스트만 실행: gradlew bugfixTest (일반 test 에도 포함된다)
+tasks.register('bugfixTest', Test) {
+    description = '0.0.2 패치: 버그 수정, 부상 회복, 공개 페이지, 레벨·구단별 기록·수비·우승 기록을 검증합니다.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'bugfix'
+    }
+    testLogging {
+        events 'passed', 'failed'
+        exceptionFormat 'full'
     }
 }
 

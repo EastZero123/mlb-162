@@ -141,26 +141,64 @@ public class Player extends BaseTimeEntity {
     @Column(name = "stat_points", nullable = false)
     private int statPoints;
 
+    /** 평판 0~100 (시작 50). 규칙: {@code ReputationRules} */
+    @Column(nullable = false)
+    private int reputation = 50;
+
+    /** 현재 계약의 트레이드 거부 조항 — 있으면 구단 주도 트레이드가 없다 (직접 요청한 트레이드는 가능) */
+    @Column(name = "no_trade_clause", nullable = false)
+    private boolean noTradeClause;
+
     @Version
     private Long version;
 
     protected Player() {
     }
 
-    /** 새 계약 (FA 이적이면 구단도 바뀐다) */
+    /** 새 계약 (FA 이적이면 구단도 바뀐다). 트레이드 거부 조항 없음 */
     public void signContract(Team team, long salary, int years, ContractType type) {
+        signContract(team, salary, years, type, false);
+    }
+
+    /** 새 계약 — 트레이드 거부 조항은 이 계약 기준으로 다시 정해진다 */
+    public void signContract(Team team, long salary, int years, ContractType type, boolean noTradeClause) {
         if (team != null) {
             this.team = team;
         }
         this.salary = salary;
         this.contractYears = years;
         this.contractType = type;
+        this.noTradeClause = noTradeClause;
     }
 
     /** 트레이드: 계약은 그대로, 구단만 바뀐다 (레벨 유지) */
     public void tradeTo(Team newTeam) {
         requireStage(PlayerStage.DRAFTED);
         this.team = newTeam;
+    }
+
+    /** 직접 요청한 트레이드가 성사되면 거부 조항은 스스로 포기한 것으로 보고 소멸 */
+    public void waiveNoTradeClause() {
+        this.noTradeClause = false;
+    }
+
+    public boolean isNoTradeClause() {
+        return noTradeClause;
+    }
+
+    public int getReputation() {
+        return reputation;
+    }
+
+    /**
+     * 평판 변화 (0~100 범위로 자른다).
+     *
+     * @return 실제로 바뀐 양 (범위 끝이면 요청보다 작을 수 있다)
+     */
+    public int changeReputation(int delta) {
+        int before = reputation;
+        reputation = Math.max(0, Math.min(100, reputation + delta));
+        return reputation - before;
     }
 
     /** 다년 계약 1년 경과 */
@@ -250,10 +288,40 @@ public class Player extends BaseTimeEntity {
         this.age++;
     }
 
-    /** 노화 하락 적용 (최소 1) */
-    public void applyAging(Map<Attribute, Integer> deltas) {
+    /**
+     * 노화 하락 적용 (최소 1). 능력치·나이가 바뀌어 훈련 비용이 쌓인 진행도 이하로 줄면
+     * 그 자리에서 +1 하고 남은 진행도는 이월한다 (예: 6/8 쌓았는데 비용이 4가 되면 +1, 2/새 비용).
+     *
+     * @return 정산 내역 문장 (없으면 빈 목록)
+     */
+    public List<String> applyAging(Map<Attribute, Integer> deltas) {
         deltas.forEach((attribute, delta) -> attributes.computeIfPresent(attribute,
                 (a, value) -> Math.max(Attribute.MIN, value + delta)));
+        return settleTrainingProgress();
+    }
+
+    private List<String> settleTrainingProgress() {
+        List<String> lines = new ArrayList<>();
+        for (Attribute attribute : List.copyOf(trainingProgress.keySet())) {
+            int progress = trainingProgress.get(attribute);
+            int before = attributes.getOrDefault(attribute, 0);
+            while (canTrain(attribute) && progress >= trainingCost(attribute)) {
+                progress -= trainingCost(attribute);
+                raise(attribute);
+            }
+            if (progress > 0 && canTrain(attribute)) {
+                trainingProgress.put(attribute, progress);
+            } else {
+                trainingProgress.remove(attribute);
+            }
+            int after = attributes.getOrDefault(attribute, 0);
+            if (after > before) {
+                lines.add("훈련 정산: " + attribute.getLabel() + " +" + (after - before) + " → " + after
+                        + (progress > 0 && canTrain(attribute)
+                        ? " (진행도 " + progress + "/" + trainingCost(attribute) + " 이월)" : ""));
+            }
+        }
+        return lines;
     }
 
     /** 은퇴: 슬롯을 반납하고 기록은 보관 */

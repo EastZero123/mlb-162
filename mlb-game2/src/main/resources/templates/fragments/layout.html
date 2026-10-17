@@ -13,10 +13,17 @@
     <div class="header-right" sec:authorize="isAuthenticated()"
          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <a class="nav-link" th:href="@{/rankings}">랭킹</a>
+        <a class="nav-link" th:href="@{/patch-notes}">패치노트</a>
         <span class="who" sec:authentication="principal.nickname">닉네임</span>
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="btn btn-ghost">로그아웃</button>
         </form>
+    </div>
+    <div class="header-right" sec:authorize="!isAuthenticated()"
+         xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <a class="nav-link" th:href="@{/rankings}">랭킹</a>
+        <a class="nav-link" th:href="@{/patch-notes}">패치노트</a>
+        <a class="btn btn-ghost" th:href="@{/login}">로그인</a>
     </div>
 </header>
 </body>

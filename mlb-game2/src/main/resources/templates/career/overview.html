@@ -22,9 +22,16 @@
             <span class="award-icon">🏛️</span>
             <strong th:text="${summary.hallOfFameLabel}">명예의 전당</strong>
         </div>
+        <div class="award-banner champion-banner" th:if="${summary.championships > 0}">
+            <span class="award-icon">🏆</span>
+            <strong th:text="'월드시리즈 우승 ' + ${summary.championships} + '회'">월드시리즈 우승 2회</strong>
+            <span class="muted small"
+                  th:text="'(' + ${#strings.listJoin(summary.championshipYears(), ', ')} + ')'">(2028, 2031)</span>
+        </div>
         <dl class="draft-facts">
             <div><dt>명예의 전당 점수</dt><dd th:text="${summary.hallOfFameScore()}">0</dd></div>
             <div><dt>메이저 주요 시즌</dt><dd th:text="${summary.majorSeasons()} + '시즌'">0</dd></div>
+            <div><dt>메이저 통산 WAR</dt><dd th:text="${@fmt.war(summary.careerWar)}">0.0</dd></div>
             <div><dt>수상 포인트</dt><dd th:text="${summary.awardPoints()}">0</dd></div>
             <div><dt>커리어 수령액</dt><dd th:text="${@fmt.money(summary.careerEarnings())}">$0</dd></div>
         </dl>
@@ -55,35 +62,60 @@
            th:text="${t.games} + '경기 ' + ${t.wins} + '승 ' + ${t.losses} + '패 ' + ${t.saves} + '세이브 · ' + ${t.innings} + '이닝 · ERA ' + ${@fmt.two(t.era)} + ' · ' + ${t.strikeouts} + '탈삼진'">통산</p>
     </section>
 
-    <!-- 시즌별 -->
-    <section class="card section">
-        <h2 class="section-title">시즌별 기록 (전 레벨)</h2>
-        <div class="table-wrap">
-            <table class="stat-table">
-                <thead>
-                <tr th:unless="${p.pitcher}"><th>연도</th><th class="left">소속</th><th>G</th><th>PA</th><th>H</th><th>HR</th><th>RBI</th><th>SB</th><th>AVG</th><th>OPS</th></tr>
-                <tr th:if="${p.pitcher}"><th>연도</th><th class="left">소속</th><th>G</th><th>W</th><th>L</th><th>SV</th><th>IP</th><th>SO</th><th>ERA</th><th>WHIP</th></tr>
-                </thead>
-                <tbody>
-                <tr th:each="row : ${summary.seasons()}">
-                    <td th:text="${row.season().seasonYear}">2026</td>
-                    <td class="left" th:text="${@fmt.teamName(row.team(), row.season().leagueLevel)}">팀</td>
-                    <th:block th:unless="${p.pitcher}" th:with="b=${row.batting()}">
-                        <td th:text="${b.games}">0</td><td th:text="${b.plateAppearances}">0</td>
-                        <td th:text="${b.hits}">0</td><td th:text="${b.homeRuns}">0</td>
-                        <td th:text="${b.rbi}">0</td><td th:text="${b.stolenBases}">0</td>
-                        <td th:text="${@fmt.rate(b.average)}">.000</td><td th:text="${@fmt.rate(b.ops)}">.000</td>
-                    </th:block>
-                    <th:block th:if="${p.pitcher}" th:with="t=${row.pitching()}">
-                        <td th:text="${t.games}">0</td><td th:text="${t.wins}">0</td>
-                        <td th:text="${t.losses}">0</td><td th:text="${t.saves}">0</td>
-                        <td th:text="${t.innings}">0.0</td><td th:text="${t.strikeouts}">0</td>
-                        <td th:text="${@fmt.two(t.era)}">0.00</td><td th:text="${@fmt.two(t.whip)}">0.00</td>
-                    </th:block>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+    <!-- 정규시즌 기록: 연도·레벨·구단별 (같은 해 같은 레벨·구단은 한 줄) -->
+    <section class="card section" th:with="rec=${summary.records()}">
+        <h2 class="section-title">정규시즌 기록</h2>
+        <p class="muted small" th:if="${rec.empty}">아직 출전 기록이 없습니다.</p>
+
+        <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
+            <h3 class="sub-title">메이저리그</h3>
+            <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.mlb()}, true)}"></div></th:block>
+            <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.mlb()}, true)}"></div></th:block>
+        </th:block>
+        <th:block th:unless="${#lists.isEmpty(rec.minors())}">
+            <h3 class="sub-title">마이너리그</h3>
+            <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.minors()}, true)}"></div></th:block>
+            <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.minors()}, true)}"></div></th:block>
+        </th:block>
+        <p class="muted small" th:unless="${#lists.isEmpty(rec.mlb())}">
+            합계 행은 메이저에서 한 해에 두 팀 이상 뛰었을 때만 표시돼요. 🏆 는 그 팀으로 시즌을 마치고 월드시리즈 우승.
+        </p>
+    </section>
+
+    <!-- 세부 지표: 정규시즌 기록과 같은 행 구성 -->
+    <section class="card section" th:unless="${summary.records().empty}" th:with="det=${summary.detail()}">
+        <h2 class="section-title">세부 지표</h2>
+        <th:block th:unless="${#lists.isEmpty(det.mlb())}">
+            <h3 class="sub-title">메이저리그</h3>
+            <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.mlb()}, true)}"></div></th:block>
+            <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.mlb()}, true)}"></div></th:block>
+        </th:block>
+        <th:block th:unless="${#lists.isEmpty(det.minors())}">
+            <h3 class="sub-title">마이너리그</h3>
+            <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.minors()}, true)}"></div></th:block>
+            <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.minors()}, true)}"></div></th:block>
+        </th:block>
+        <p th:replace="~{fragments/records :: detailNote}"></p>
+    </section>
+
+    <!-- 수비 기록 (타자) -->
+    <section class="card section" th:unless="${p.pitcher or summary.records().empty}" th:with="rec=${summary.records()}">
+        <h2 class="section-title">수비 기록</h2>
+        <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
+            <h3 class="sub-title">메이저리그</h3>
+            <div th:replace="~{fragments/records :: fielding(${rec.mlb()}, true, ${p.position.name() == 'C'})}"></div>
+        </th:block>
+        <th:block th:unless="${#lists.isEmpty(rec.minors())}">
+            <h3 class="sub-title">마이너리그</h3>
+            <div th:replace="~{fragments/records :: fielding(${rec.minors()}, true, ${p.position.name() == 'C'})}"></div>
+        </th:block>
+    </section>
+
+    <!-- 포스트시즌 기록 -->
+    <section class="card section" th:unless="${#lists.isEmpty(summary.postseason())}">
+        <h2 class="section-title">포스트시즌 기록</h2>
+        <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${summary.postseason()}, true)}"></div></th:block>
+        <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${summary.postseason()}, true)}"></div></th:block>
     </section>
 
     <section class="card section" th:unless="${#lists.isEmpty(summary.awards())}">

@@ -130,7 +130,8 @@ public class SeasonService {
         SeriesInput input = new SeriesInput(SeriesRecorder.newSeed(), season.getLeagueLevel(), matchup.series().home(),
                 matchup.team(), matchup.opponentRatings(), SeriesInput.DEFAULT_GAMES, PlayerSnapshot.of(player),
                 season.getFatigue(), season.usage(), sidelined);
-        PlayedSeries played = seriesRecorder.play(player.getId(), season.getSeasonYear(), seriesNo, input);
+        PlayedSeries played = seriesRecorder.play(player.getId(), season.getSeasonYear(), seriesNo,
+                player.getTeam().getId(), input);
         SeriesResult result = played.result();
 
         BattingLine batting = read(season.getBattingJson(), BattingLine.class, BattingLine::new);
@@ -160,6 +161,21 @@ public class SeasonService {
                 ? tradeService.afterSeries(player, season, seriesNo, world, mlbSeason(userId, playerId).teamResults())
                 : null;
         return new SeriesOutcome(season, matchup, played.record(), result, sidelined, levelChange, awards, trade);
+    }
+
+    /**
+     * 유저의 트레이드 요청. 선수·시즌을 이 트랜잭션 안에서 불러와야 이적(구단 변경)이 저장된다
+     * (open-in-view 가 꺼져 있어 컨트롤러에서 불러온 엔티티는 준영속 상태).
+     */
+    @Transactional
+    public TradeEvent requestTrade(Long userId, Long playerId) {
+        Player player = playerService.getOwned(userId, playerId);
+        if (player.isRetired()) {
+            throw new SeasonProgressException("은퇴한 선수입니다.");
+        }
+        PlayerSeason season = currentSeason(userId, playerId);
+        LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
+        return tradeService.request(player, season, world, mlbSeason(userId, playerId).teamResults());
     }
 
     /** 9시리즈마다 승격·강등 판정 (부상 결장 중이면 판정하지 않음) */
@@ -283,10 +299,6 @@ public class SeasonService {
 
     public PitchingLine pitching(PlayerSeason season) {
         return read(season.getPitchingJson(), PitchingLine.class, PitchingLine::new);
-    }
-
-    public FieldingLine fielding(PlayerSeason season) {
-        return read(season.getFieldingJson(), FieldingLine.class, FieldingLine::new);
     }
 
     private <T> T read(String json, Class<T> type, Supplier<T> empty) {

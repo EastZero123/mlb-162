@@ -23,6 +23,10 @@
                         · <strong th:text="${player.teamDisplayName}">디트로이트 타이거스 A</strong>
                     </th:block>
                 </p>
+                <p class="player-meta" th:if="${player.team != null}">
+                    평판 <strong th:text="${player.reputation}">50</strong>
+                    <th:block th:if="${player.noTradeClause}"> · 트레이드 거부권</th:block>
+                </p>
             </div>
             <div class="ovr big">OVR <strong th:text="${#numbers.formatDecimal(player.overall, 1, 1)}">30.0</strong></div>
         </div>

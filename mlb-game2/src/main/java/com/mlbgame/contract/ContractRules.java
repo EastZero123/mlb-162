@@ -2,6 +2,7 @@ package com.mlbgame.contract;
 
 import com.mlbgame.league.world.Market;
 import com.mlbgame.league.world.Payroll;
+import com.mlbgame.reputation.ReputationRules;
 
 /**
  * 계약·연봉 규칙 (순수 계산). 설계: docs/league-world.md 8장
@@ -12,7 +13,9 @@ import com.mlbgame.league.world.Payroll;
  * 적정 연봉     연봉조정: 시장가(평가 OVR) × 40/60/80% (3·4·5년 차) / FA: 시장가
  * 연봉조정      구단 제시 = 적정 × 90%. 청문회는 적정 연봉에 더 가까운 쪽 금액 (같으면 구단)
  * 연장 제안     서비스 2~5년, 평가 OVR 68 이상이면 35% — 연봉 = 시장가 × 75%, 3~6년
- * FA 역제안     요구액이 오퍼보다 x% 높으면 수락 확률 1 − 3x (10% → 70%, 33% 이상 → 0)
+ * FA 역제안     요구액이 오퍼보다 x% 높으면 수락 확률 1 − 3x × 평판 보정 (평판 50: 10% → 70%, 33% 이상 → 0)
+ * 평판         연장 제안 확률 × 평판/50 (최대 60%), FA 오퍼 구단 수·금액 보정 — {@link ReputationRules}
+ * 거부 조항     어떤 제안이든 계약할 때 트레이드 거부 조항을 넣을지 고른다 (조건·대가 없음)
  * </pre>
  */
 public final class ContractRules {
@@ -73,13 +76,18 @@ public final class ContractRules {
         return 1;
     }
 
-    /** FA 역제안 수락 확률 */
+    /** FA 역제안 수락 확률 (평판 50 기준) */
     public static double counterAcceptance(long ask, long offer) {
+        return counterAcceptance(ask, offer, ReputationRules.START);
+    }
+
+    /** FA 역제안 수락 확률: 1 − 초과율 × 3 × 평판 보정 (평판 100 이면 결렬 위험 절반, 0 이면 1.5배) */
+    public static double counterAcceptance(long ask, long offer, int reputation) {
         if (ask <= offer) {
             return 1;
         }
         double over = (double) ask / offer - 1;
-        return Math.max(0, Math.min(1, 1 - over * 3));
+        return Math.max(0, Math.min(1, 1 - over * 3 * ReputationRules.counterRiskFactor(reputation)));
     }
 
     static long round(double value) {

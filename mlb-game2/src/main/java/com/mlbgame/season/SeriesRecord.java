@@ -41,6 +41,10 @@ public class SeriesRecord extends BaseTimeEntity {
     @Column(name = "league_level", nullable = false, length = 10)
     private LeagueLevel leagueLevel;
 
+    /** 이 시리즈를 뛴 소속 구단 (시즌 중 트레이드되면 시리즈마다 다를 수 있다) */
+    @Column(name = "team_id", nullable = false)
+    private Long teamId;
+
     @Column(name = "input_json", nullable = false, length = 4000)
     private String inputJson;
 
@@ -56,13 +60,14 @@ public class SeriesRecord extends BaseTimeEntity {
     protected SeriesRecord() {
     }
 
-    public SeriesRecord(Long playerId, int seasonYear, int seriesNo, long seed, LeagueLevel leagueLevel,
+    public SeriesRecord(Long playerId, int seasonYear, int seriesNo, long seed, LeagueLevel leagueLevel, Long teamId,
                         String inputJson, int wins, int losses, String summaryJson) {
         this.playerId = playerId;
         this.seasonYear = seasonYear;
         this.seriesNo = seriesNo;
         this.seed = seed;
         this.leagueLevel = leagueLevel;
+        this.teamId = teamId;
         this.inputJson = inputJson;
         this.wins = wins;
         this.losses = losses;
@@ -91,6 +96,10 @@ public class SeriesRecord extends BaseTimeEntity {
 
     public LeagueLevel getLeagueLevel() {
         return leagueLevel;
+    }
+
+    public Long getTeamId() {
+        return teamId;
     }
 
     public String getInputJson() {
