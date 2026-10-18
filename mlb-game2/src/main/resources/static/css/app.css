@@ -469,3 +469,60 @@ a.btn { text-decoration: none; text-align: center; }
 .reputation-value { font-size: 22px; font-weight: 700; min-width: 2.5em; }
 .ntc-option { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; font-size: 14px; }
 .trade-note { margin: 4px 0 0; }
+
+/* 모바일 앱 느낌: 탭 하이라이트·더블탭 확대·글자 자동 확대 끄기, 고정 헤더, 노치 영역 여백 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: transparent; overscroll-behavior-x: none; }
+a, button, .btn, .tab, .choice, .train-btn, .stepper .step, label { touch-action: manipulation; }
+.btn, .tab, .nav-link, .brand, .train-btn, .stepper .step, .site-header {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+.btn:active:not(:disabled), .tab:active, .train-btn:active:not(:disabled), .stepper .step:active, .choice:active {
+    transform: scale(.97);
+    transition: transform .08s ease;
+}
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    padding-left: calc(16px + env(safe-area-inset-left));
+    padding-right: calc(16px + env(safe-area-inset-right));
+}
+body { padding-bottom: env(safe-area-inset-bottom); }
+.auth-wrap { min-height: 100dvh; }
+
+/* "앱으로 설치" 안내 막대 */
+.install-bar {
+    position: fixed;
+    left: 12px; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .18);
+    font-size: 14px;
+    animation: fadeUp .3s ease both;
+}
+.install-bar span { flex: 1; }
+.install-bar .btn-primary { width: auto; margin: 0; padding: 8px 14px; }
+.install-no { border: 0; background: none; color: var(--muted); font-size: 16px; padding: 4px 6px; cursor: pointer; }
+
+@media (max-width: 560px) {
+    /* iOS 가 입력칸 눌렀을 때 화면을 확대하지 않도록 16px */
+    .form input, .form select, .ask-form input { font-size: 16px; }
+    .site-header { padding-top: calc(10px + env(safe-area-inset-top)); padding-bottom: 10px; }
+}
+
+/* 홈 화면 앱으로 실행 중일 때 */
+@media (display-mode: standalone) {
+    body { -webkit-user-select: none; user-select: none; }
+    input, textarea, .stat-table, .linescore, .patch-list { -webkit-user-select: text; user-select: text; }
+}

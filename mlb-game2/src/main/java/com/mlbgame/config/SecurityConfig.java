@@ -15,6 +15,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error",
+                                "/icons/**", "/manifest.webmanifest", "/sw.js",
                                 "/rankings", "/profiles/**", "/patch-notes")   // 로그인 없이 공개
                         .permitAll()
                         .anyRequest().authenticated())

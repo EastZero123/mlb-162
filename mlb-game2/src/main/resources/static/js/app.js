@@ -94,3 +94,42 @@ document.addEventListener('submit', function (event) {
     var field = form.querySelector('input[name="noTradeClause"]');
     if (box && field) field.value = box.checked ? 'true' : 'false';
 });
+
+// 홈 화면 앱(PWA): 서비스 워커 등록, 브라우저로 열었을 때 "앱으로 설치" 안내
+(function () {
+    'use strict';
+
+    if ('serviceWorker' in navigator) {
+        var swUrl = document.querySelector('link[rel="manifest"]').href.replace('manifest.webmanifest', 'sw.js');
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register(swUrl).catch(function () {});
+        });
+    }
+
+    var DISMISS_KEY = 'installBannerDismissed';
+    function dismissed() {
+        try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        if (dismissed()) return;
+        var deferred = event;
+
+        var bar = document.createElement('div');
+        bar.className = 'install-bar';
+        bar.innerHTML = '<span>⚾ 홈 화면에 추가하면 앱처럼 쓸 수 있어요</span>' +
+            '<button type="button" class="btn btn-primary install-yes">설치</button>' +
+            '<button type="button" class="install-no" aria-label="닫기">✕</button>';
+        document.body.appendChild(bar);
+
+        bar.querySelector('.install-yes').addEventListener('click', function () {
+            bar.remove();
+            deferred.prompt();
+        });
+        bar.querySelector('.install-no').addEventListener('click', function () {
+            bar.remove();
+            try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) { /* 저장 못 해도 무시 */ }
+        });
+    });
+})();

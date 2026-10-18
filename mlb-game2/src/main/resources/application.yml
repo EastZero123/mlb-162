@@ -63,3 +63,5 @@ server:
     context-path: /game   # 메인 주소: http://localhost:8080/game
     session:
       timeout: 2h
+  mime-mappings:
+    webmanifest: application/manifest+json   # 홈 화면 앱(PWA) manifest

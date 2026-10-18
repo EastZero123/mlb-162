@@ -1,0 +1,18 @@
+{
+  "id": "/game/",
+  "name": "MLB 선수 키우기",
+  "short_name": "MLB 키우기",
+  "description": "나만의 야구 선수를 드래프트 컴바인부터 은퇴까지 키우는 게임",
+  "lang": "ko",
+  "start_url": "/game/dashboard",
+  "scope": "/game/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#0b3d91",
+  "icons": [
+    { "src": "/game/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/game/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/game/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
