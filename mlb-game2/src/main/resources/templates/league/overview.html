@@ -1,28 +1,29 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('리그 현황')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{nav.league})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container">
-    <h1 class="page-title" th:text="${season.seasonYear} + ' 메이저리그 현황'">2026 메이저리그 현황</h1>
+    <h1 class="page-title" th:text="#{league.title(${season.seasonYear})}">2026 메이저리그 현황</h1>
     <p class="muted">
-        <span th:text="${season.seriesPlayed} + ' / 54 시리즈 진행'">진행</span> ·
-        내 소속 <strong th:text="${@fmt.teamName(player.team, season.leagueLevel)}">팀</strong>
-        <span th:if="${season.leagueLevel.name() != 'MLB'}">(메이저 구단 순위를 표시합니다)</span>
+        <span th:text="#{league.progress(${season.seriesPlayed})}">진행</span> ·
+        <th:block th:text="#{league.myTeam}">내 소속</th:block> <strong th:text="${@fmt.teamName(player.team, season.leagueLevel)}">팀</strong>
+        <span th:if="${season.leagueLevel.name() != 'MLB'}" th:text="#{league.mlbStandingsNote}">(메이저 구단 순위를 표시합니다)</span>
     </p>
 
     <!-- 순위표 -->
     <div class="league-grid">
         <section class="card section" th:each="lg : ${leagues}">
-            <h2 class="section-title" th:text="${lg == 'AL'} ? '아메리칸리그' : '내셔널리그'">아메리칸리그</h2>
+            <h2 class="section-title" th:text="${lg == 'AL'} ? #{league.al} : #{league.nl}">아메리칸리그</h2>
             <div th:each="dv : ${divisions}" class="division">
-                <h3 class="sub-title" th:text="${dv == 'EAST'} ? '동부' : (${dv == 'CENTRAL'} ? '중부' : '서부')">동부</h3>
+                <h3 class="sub-title" th:text="${dv == 'EAST'} ? #{league.east} : (${dv == 'CENTRAL'} ? #{league.central} : #{league.west})">동부</h3>
                 <table class="stat-table">
-                    <thead><tr><th class="left">팀</th><th>승</th><th>패</th><th>승률</th><th>승차</th></tr></thead>
+                    <thead><tr><th class="left" th:text="#{league.col.team}">팀</th><th th:text="#{league.col.w}">승</th><th th:text="#{league.col.l}">패</th>
+                        <th th:text="#{league.col.pct}">승률</th><th th:text="#{league.col.gb}">승차</th></tr></thead>
                     <tbody>
                     <tr th:each="d : ${table.division(lg, dv)}"
                         th:classappend="${d.row().team().id == myTeamId} ? 'my-team'">
-                        <td class="left" th:text="${d.row().team().nameKo}">팀</td>
+                        <td class="left" th:text="${d.row().team().displayName}">팀</td>
                         <td th:text="${d.row().wins()}">0</td>
                         <td th:text="${d.row().losses()}">0</td>
                         <td th:text="${@fmt.rate(d.row().pct())}">.000</td>
@@ -31,12 +32,12 @@
                     </tbody>
                 </table>
             </div>
-            <h3 class="sub-title">포스트시즌 진출권 (현재 기준)</h3>
+            <h3 class="sub-title" th:text="#{league.playoffSeeds}">포스트시즌 진출권 (현재 기준)</h3>
             <ol class="seed-list">
                 <li th:each="s : ${table.playoffSeeds(lg)}"
                     th:classappend="${s.row().team().id == myTeamId} ? 'my-team'">
-                    <span th:text="${s.row().team().nameKo}">팀</span>
-                    <small class="muted" th:text="${s.divisionWinner()} ? '지구 1위' : '와일드카드'">지구 1위</small>
+                    <span th:text="${s.row().team().displayName}">팀</span>
+                    <small class="muted" th:text="${s.divisionWinner()} ? #{league.divisionWinner} : #{league.wildCard}">지구 1위</small>
                 </li>
             </ol>
         </section>
@@ -44,10 +45,10 @@
 
     <!-- 리더보드 -->
     <section class="card section">
-        <h2 class="section-title">개인 기록 순위</h2>
-        <p class="muted small" th:if="${completedMonths == 0}">첫 달(9시리즈)이 끝나면 리그 기록이 집계됩니다.</p>
+        <h2 class="section-title" th:text="#{league.leaders}">개인 기록 순위</h2>
+        <p class="muted small" th:if="${completedMonths == 0}" th:text="#{league.leaders.firstMonth}">첫 달(9시리즈)이 끝나면 리그 기록이 집계됩니다.</p>
         <p class="muted small" th:unless="${completedMonths == 0}"
-           th:text="${completedMonths} + '개월 기록 기준 · 비율 기록은 규정 타석(경기당 3.1)·규정 이닝(경기당 1) 이상'">기준</p>
+           th:text="#{league.leaders.basis(${completedMonths})}">기준</p>
         <div class="leader-grid" th:unless="${completedMonths == 0}">
             <div class="leader-box" th:each="entry : ${leaders}">
                 <h3 class="sub-title" th:text="${entry.key.label}">홈런</h3>
@@ -66,8 +67,8 @@
     </section>
 
     <div class="actions">
-        <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}">시즌 진행으로</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}">내 시즌 기록</a>
+        <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}" th:text="#{nav.toSeason}">시즌 진행으로</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}" th:text="#{league.mySeasonStats}">내 시즌 기록</a>
     </div>
 </main>
 </body>

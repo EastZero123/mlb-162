@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('시즌 진행')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{dashboard.playSeason})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow">
     <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
-    <div class="alert alert-success" th:if="${trainedMessage}" th:text="'훈련 완료: ' + ${trainedMessage}"></div>
+    <div class="alert alert-success" th:if="${trainedMessage}" th:text="#{season.trained(${trainedMessage})}"></div>
     <div class="alert alert-info" th:if="${contractPending}">
-        결정하지 않은 계약 제안이 있어요.
-        <a th:href="@{/players/{id}/contract(id=${player.id})}">계약 화면에서 협상하기</a>
-        (협상을 마쳐야 시리즈를 진행할 수 있어요)
+        <th:block th:text="#{season.contractPending}">결정하지 않은 계약 제안이 있어요.</th:block>
+        <a th:href="@{/players/{id}/contract(id=${player.id})}" th:text="#{season.contractPending.link}">계약 화면에서 협상하기</a>
+        <th:block th:text="#{season.contractPending.note}">(협상을 마쳐야 시리즈를 진행할 수 있어요)</th:block>
     </div>
     <section class="card section news-card" th:if="${headlines != null}">
-        <h2 class="section-title">오프시즌 소식</h2>
+        <h2 class="section-title" th:text="#{season.offseasonNews}">오프시즌 소식</h2>
         <ul class="highlight-list">
             <li th:each="h : ${headlines}" th:text="${h}">2027 시즌 시작!</li>
         </ul>
@@ -31,76 +31,77 @@
 
     <!-- 2) 다음 시리즈 -->
     <section class="card section next-card" th:if="${!season.trainingPending and next != null}">
-        <h2 class="section-title" th:text="${next.series().seriesNo()} + '번째 시리즈 · ' + ${next.series().month()} + '월'">다음 시리즈</h2>
+        <h2 class="section-title" th:text="#{season.nextSeries(${next.series().seriesNo()}, ${@fmt.month(next.series().month())})}">다음 시리즈</h2>
         <div class="matchup">
             <div class="matchup-team team-stripe" th:style="'--team-color:' + ${player.team.primaryColor}">
-                <span class="muted small" th:text="${next.series().home()} ? '홈' : '원정'">홈</span>
+                <span class="muted small" th:text="${next.series().home()} ? #{common.home} : #{common.away}">홈</span>
                 <strong th:text="${@fmt.teamName(player.team, season.leagueLevel)}">우리 팀</strong>
-                <small class="muted" th:text="'전력 ' + ${@fmt.one(next.team().overall())}">전력</small>
+                <small class="muted" th:text="#{common.power(${@fmt.one(next.team().overall())})}">전력</small>
             </div>
             <div class="vs">VS</div>
             <div class="matchup-team team-stripe" th:style="'--team-color:' + ${next.opponent().primaryColor}">
-                <span class="muted small" th:text="${next.series().home()} ? '원정' : '홈'">원정</span>
+                <span class="muted small" th:text="${next.series().home()} ? #{common.away} : #{common.home}">원정</span>
                 <strong th:text="${@fmt.teamName(next.opponent(), season.leagueLevel)}">상대 팀</strong>
-                <small class="muted" th:text="'전력 ' + ${@fmt.one(next.opponentRatings().overall())}">전력</small>
+                <small class="muted" th:text="#{common.power(${@fmt.one(next.opponentRatings().overall())})}">전력</small>
             </div>
         </div>
-        <p class="muted small" th:if="${season.sidelined}">부상으로 결장합니다. 팀 경기만 진행되고 훈련은 그대로 할 수 있어요.</p>
+        <p class="muted small" th:if="${season.sidelined}" th:text="#{season.sidelinedNote}">부상으로 결장합니다. 팀 경기만 진행되고 훈련은 그대로 할 수 있어요.</p>
         <form th:action="@{/players/{id}/season/play(id=${player.id})}" method="post">
-            <button type="submit" class="btn btn-primary">시리즈 진행 (3경기)</button>
+            <button type="submit" class="btn btn-primary" th:text="#{season.playSeries}">시리즈 진행 (3경기)</button>
         </form>
     </section>
 
     <!-- 3) 시즌 종료 -->
     <section class="card section" th:if="${season.completed and !season.trainingPending}">
-        <h2 class="section-title" th:text="${season.seasonYear} + ' 시즌 종료'">시즌 종료</h2>
-        <p th:text="'팀 성적 ' + ${season.teamWins} + '승 ' + ${season.teamLosses} + '패'">팀 성적</p>
+        <h2 class="section-title" th:text="#{season.over(${season.seasonYear})}">시즌 종료</h2>
+        <p th:text="#{season.teamRecord(${season.teamWins}, ${season.teamLosses})}">팀 성적</p>
         <div class="actions">
-            <a class="btn btn-ghost" th:href="@{/players/{id}/postseason(id=${player.id})}">포스트시즌 보기</a>
+            <a class="btn btn-ghost" th:href="@{/players/{id}/postseason(id=${player.id})}" th:text="#{season.viewPostseason}">포스트시즌 보기</a>
             <form th:if="${readyForNext}" th:action="@{/players/{id}/season/next(id=${player.id})}" method="post">
-                <button type="submit" class="btn btn-primary" th:text="${season.seasonYear + 1} + ' 시즌 시작'">2027 시즌 시작</button>
+                <button type="submit" class="btn btn-primary" th:text="#{season.startNext(${season.seasonYear + 1})}">2027 시즌 시작</button>
             </form>
         </div>
-        <p class="muted small" th:unless="${readyForNext}">포스트시즌을 끝까지 진행하면 다음 시즌으로 넘어갈 수 있어요.</p>
-        <p class="muted small" th:if="${readyForNext}">다음 시즌으로 넘어가면 나이가 한 살 늘고(32세부터 노화), 리그 선수들의 성장·은퇴·FA 이동이 일어납니다.</p>
+        <p class="muted small" th:unless="${readyForNext}" th:text="#{season.finishPostseason}">포스트시즌을 끝까지 진행하면 다음 시즌으로 넘어갈 수 있어요.</p>
+        <p class="muted small" th:if="${readyForNext}" th:text="#{season.nextNote}">다음 시즌으로 넘어가면 나이가 한 살 늘고(32세부터 노화), 리그 선수들의 성장·은퇴·FA 이동이 일어납니다.</p>
     </section>
 
     <section class="card section" th:if="${!#lists.isEmpty(upcoming)}">
-        <h2 class="section-title">다가오는 일정</h2>
+        <h2 class="section-title" th:text="#{season.upcoming}">다가오는 일정</h2>
         <ul class="schedule-list">
             <li th:each="m : ${upcoming}">
                 <span class="muted" th:text="${m.series().seriesNo()} + '.'">1.</span>
                 <span th:text="${m.series().home()} ? 'vs' : '@'">vs</span>
                 <span th:text="${@fmt.teamName(m.opponent(), season.leagueLevel)}">상대</span>
-                <small class="muted" th:text="'전력 ' + ${@fmt.one(m.opponentRatings().overall())}"></small>
+                <small class="muted" th:text="#{common.power(${@fmt.one(m.opponentRatings().overall())})}"></small>
             </li>
         </ul>
     </section>
 
     <section class="card section" th:unless="${#lists.isEmpty(tradeEvents)}">
-        <h2 class="section-title">트레이드 소식</h2>
+        <h2 class="section-title" th:text="#{season.tradeNews}">트레이드 소식</h2>
         <ul class="highlight-list">
-            <li th:each="t : ${tradeEvents}" th:text="${t.afterSeries} + '번째 시리즈 후 · ' + ${t.kind.label} + ' — ' + ${t.note}">루머</li>
+            <li th:each="t : ${tradeEvents}" th:text="#{season.tradeEvent(${t.afterSeries}, ${t.kind.label}, ${t.note})}">루머</li>
         </ul>
     </section>
 
-    <p class="muted small trade-note" th:if="${player.noTradeClause}">
+    <p class="muted small trade-note" th:if="${player.noTradeClause}" th:text="#{season.ntcNote}">
         트레이드 거부 조항이 있어 구단 주도 트레이드(루머 포함)가 일어나지 않습니다. 직접 요청은 할 수 있어요.
     </p>
 
     <div class="actions">
         <form th:if="${canRequestTrade}" th:action="@{/players/{id}/season/trade-request(id=${player.id})}" method="post"
-              onsubmit="return confirm('트레이드를 요청할까요? 거절되면 평판이 8 떨어지고 구단과의 관계가 틀어져 이후 트레이드될 가능성이 커집니다. 거부 조항이 있다면 성사될 때 소멸합니다.');">
-            <button type="submit" class="btn btn-ghost" th:text="'트레이드 요청 (성공 약 ' + ${tradeChance} + '%)'">트레이드 요청</button>
+              th:data-confirm="#{season.tradeRequest.confirm}"
+              onsubmit="return confirm(this.dataset.confirm);">
+            <button type="submit" class="btn btn-ghost" th:text="#{season.tradeRequest(${tradeChance})}">트레이드 요청</button>
         </form>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/career(id=${player.id})}">커리어</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}">시즌 기록</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/league(id=${player.id})}">리그 현황</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/contract(id=${player.id})}">계약</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/career(id=${player.id})}" th:text="#{nav.career}">커리어</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}" th:text="#{nav.seasonStats}">시즌 기록</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/league(id=${player.id})}" th:text="#{nav.league}">리그 현황</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/contract(id=${player.id})}" th:text="#{nav.contract}">계약</a>
         <a class="btn btn-ghost" th:if="${season.seriesPlayed > 0}"
-           th:href="@{/players/{id}/season/series/{no}(id=${player.id},no=${season.seriesPlayed})}">최근 시리즈 결과</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}(id=${player.id})}">선수 정보</a>
-        <a class="btn btn-ghost" th:href="@{/dashboard}">대시보드</a>
+           th:href="@{/players/{id}/season/series/{no}(id=${player.id},no=${season.seriesPlayed})}" th:text="#{season.latestSeries}">최근 시리즈 결과</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}(id=${player.id})}" th:text="#{nav.playerInfo}">선수 정보</a>
+        <a class="btn btn-ghost" th:href="@{/dashboard}" th:text="#{nav.dashboard}">대시보드</a>
     </div>
 </main>
 </body>

@@ -1,5 +1,7 @@
 package com.mlbgame.combine;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 스카우트 인터뷰 질문: "프로에서 이루고 싶은 목표는?"
  * 스카우트마다 선호하는 답이 랜덤으로 정해지고, 맞으면 가산점이 크다.
@@ -10,6 +12,10 @@ public enum InterviewAnswer {
     GROWTH("매일 어제보다 나은 선수가 되는 게 목표입니다.", "성실");
 
     public static final String QUESTION = "프로에서 이루고 싶은 목표는 무엇인가요?";
+
+    public static String question() {
+        return Messages.text("InterviewAnswer.question", QUESTION);
+    }
     public static final int MATCH_BONUS = 6;
     public static final int DEFAULT_BONUS = 2;
 
@@ -22,10 +28,10 @@ public enum InterviewAnswer {
     }
 
     public String getText() {
-        return text;
+        return Messages.text("InterviewAnswer." + name(), text);
     }
 
     public String getTrait() {
-        return trait;
+        return Messages.text("InterviewAnswer." + name() + ".trait", trait);
     }
 }

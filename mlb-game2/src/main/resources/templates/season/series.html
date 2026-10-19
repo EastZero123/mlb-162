@@ -1,27 +1,27 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('시리즈 결과')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{series.title})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow reveal-all"
       th:with="result=${detail.result()}, m=${detail.matchup()}, level=${season.leagueLevel}">
 
     <section class="card section series-head reveal">
-        <p class="muted small" th:text="${season.seasonYear} + ' 시즌 ' + ${m.series().seriesNo()} + '번째 시리즈 · ' + ${m.series().month()} + '월'">시리즈</p>
+        <p class="muted small" th:text="#{series.head(${season.seasonYear}, ${m.series().seriesNo()}, ${@fmt.month(m.series().month())})}">시리즈</p>
         <h1 class="page-title">
             <span th:text="${m.series().home()} ? 'vs' : '@'">vs</span>
             <span th:text="${@fmt.teamName(m.opponent(), level)}">상대</span>
         </h1>
         <p class="series-score">
-            <strong th:text="${result.wins()} + '승 ' + ${result.losses()} + '패'">2승 1패</strong>
-            <span th:if="${result.wins() == 3}" class="badge badge-win">스윕!</span>
-            <span th:if="${result.losses() == 3}" class="badge badge-lose">스윕패</span>
+            <strong th:text="#{common.winsLosses(${result.wins()}, ${result.losses()})}">2승 1패</strong>
+            <span th:if="${result.wins() == 3}" class="badge badge-win" th:text="#{series.sweep}">스윕!</span>
+            <span th:if="${result.losses() == 3}" class="badge badge-lose" th:text="#{series.swept}">스윕패</span>
         </p>
         <p class="muted small">
-            컨디션 <strong th:text="${result.condition().label}" th:class="'cond-' + ${result.condition().name()}">보통</strong>
-            · 시리즈 후 피로도 <strong th:text="${result.endFatigue()}">20</strong>
+            <th:block th:text="#{series.condition}">컨디션</th:block> <strong th:text="${result.condition().label}" th:class="'cond-' + ${result.condition().name()}">보통</strong>
+            · <th:block th:text="#{series.fatigueAfter}">시리즈 후 피로도</th:block> <strong th:text="${result.endFatigue()}">20</strong>
         </p>
-        <div class="alert alert-info" th:if="${detail.sidelined()}">부상으로 결장한 시리즈입니다.</div>
+        <div class="alert alert-info" th:if="${detail.sidelined()}" th:text="#{series.sidelined}">부상으로 결장한 시리즈입니다.</div>
         <div class="level-banner" th:each="t : ${detail.trades()}"
              th:classappend="${t.kind.name() == 'TRADE'} ? 'up' : 'down'">
             <strong th:text="${t.kind.label}">트레이드</strong>
@@ -30,24 +30,25 @@
         <div class="award-banner celebrate" th:each="aw : ${detail.awards()}">
             <span class="award-icon">🏆</span>
             <strong th:text="${aw.title}">5월 이달의 선수</strong>
-            <span th:text="'스탯업 포인트 +' + ${aw.points} + ' · 보너스 ' + ${@fmt.money(aw.bonus)}">+1</span>
+            <span th:text="#{award.reward(${aw.points}, ${@fmt.money(aw.bonus)})}">+1</span>
         </div>
         <div class="level-banner" th:if="${detail.levelChange() != null}"
              th:classappend="${detail.levelChange().promotion} ? 'up' : 'down'">
             <strong th:text="${detail.levelChange().message}">더블A 승격!</strong>
-            <span th:text="${@fmt.teamName(player.team, detail.levelChange().toLevel)} + ' 소속으로 다음 시리즈부터 뜁니다.'">팀</span>
+            <span th:text="#{series.levelChange(${@fmt.teamName(player.team, detail.levelChange().toLevel)})}">팀</span>
         </div>
         <div class="alert alert-error" th:if="${result.injury() != null}"
-             th:text="'부상 발생: ' + ${result.injury().severity().label} + (${result.injury().seasonEnding} ? ' (시즌 아웃)' : ' (' + ${result.injury().seriesOut()} + '시리즈 결장)')">부상</div>
+             th:with="inj=${result.injury()}, out=${inj.seasonEnding} ? #{injury.seasonEnding} : #{injury.seriesOut(${inj.seriesOut()})}"
+             th:text="#{series.injury(${inj.severity().label}, ${out})}">부상</div>
     </section>
 
     <section class="card section reveal" th:each="g, st : ${result.games()}"
              th:style="'animation-delay:' + ${0.3 + st.index * 0.4} + 's'">
         <div class="game-head">
-            <strong th:text="${st.count} + '차전'">1차전</strong>
-            <span class="badge" th:classappend="${g.win} ? 'badge-win' : 'badge-lose'" th:text="${g.win} ? '승' : '패'">승</span>
+            <strong th:text="#{series.gameNo(${st.count})}">1차전</strong>
+            <span class="badge" th:classappend="${g.win} ? 'badge-win' : 'badge-lose'" th:text="${g.win} ? #{series.win} : #{series.loss}">승</span>
             <span class="game-score" th:text="${g.teamScore()} + ' : ' + ${g.opponentScore()}">5 : 3</span>
-            <small class="muted" th:if="${g.innings() > 9}" th:text="'연장 ' + ${g.innings()} + '회'"></small>
+            <small class="muted" th:if="${g.innings() > 9}" th:text="#{series.extraInnings(${g.innings()})}"></small>
         </div>
         <div class="linescore-wrap">
             <table class="linescore">
@@ -60,12 +61,12 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <th>우리</th>
+                    <th th:text="#{series.us}">우리</th>
                     <td th:each="i : ${#numbers.sequence(0, g.innings() - 1)}" th:text="${@fmt.inningCell(g.teamLine(), i)}">0</td>
                     <td class="runs" th:text="${g.teamScore()}">0</td>
                 </tr>
                 <tr>
-                    <th>상대</th>
+                    <th th:text="#{series.them}">상대</th>
                     <td th:each="i : ${#numbers.sequence(0, g.innings() - 1)}" th:text="${@fmt.inningCell(g.opponentLine(), i)}">0</td>
                     <td class="runs" th:text="${g.opponentScore()}">0</td>
                 </tr>
@@ -73,16 +74,16 @@
             </table>
         </div>
         <p class="my-line">
-            <span class="muted small">내 기록</span>
+            <span class="muted small" th:text="#{series.myLine}">내 기록</span>
             <span th:if="${g.batting() != null}" th:text="${g.batting().summary()}">4타수 2안타</span>
             <span th:if="${g.pitching() != null}" th:text="${g.pitching().summary()}">6이닝 2실점</span>
-            <span th:if="${!g.participated()}" class="muted">출전 없음</span>
+            <span th:if="${!g.participated()}" class="muted" th:text="#{line.didNotPlay}">출전 없음</span>
         </p>
     </section>
 
     <section class="card section reveal" th:if="${!#lists.isEmpty(result.highlights())}"
              th:style="'animation-delay:' + ${0.3 + result.games().size() * 0.4} + 's'">
-        <h2 class="section-title">하이라이트</h2>
+        <h2 class="section-title" th:text="#{series.highlights}">하이라이트</h2>
         <ul class="highlight-list icons">
             <li th:each="h : ${result.highlights()}">
                 <span class="hl-icon" th:text="${@fmt.icon(h)}">💣</span>
@@ -96,8 +97,8 @@
     </th:block>
 
     <div class="actions">
-        <a class="btn btn-ghost" th:href="@{/players/{id}/season(id=${player.id})}">시즌 진행으로</a>
-        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}">시즌 기록</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season(id=${player.id})}" th:text="#{nav.toSeason}">시즌 진행으로</a>
+        <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}" th:text="#{nav.seasonStats}">시즌 기록</a>
     </div>
 </main>
 </body>

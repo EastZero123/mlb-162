@@ -1,5 +1,7 @@
 package com.mlbgame.simulation.game;
 
+import com.mlbgame.common.Messages;
+
 /** 투구 기록 (경기·시리즈·시즌 누적에 공용). 자책점은 실점과 같게 단순화 */
 public class PitchingLine {
 
@@ -65,6 +67,6 @@ public class PitchingLine {
     /** "6이닝 2실점 8탈삼진" */
     public String summary() {
         String innings = outs % 3 == 0 ? String.valueOf(outs / 3) : (outs / 3) + " " + (outs % 3) + "/3";
-        return innings + "이닝 " + runs + "실점 " + strikeouts + "탈삼진";
+        return Messages.get("line.pitch", innings, runs, strikeouts);
     }
 }

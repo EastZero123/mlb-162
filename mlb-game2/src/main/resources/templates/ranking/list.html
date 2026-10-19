@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('랭킹')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{nav.rankings})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container">
-    <h1 class="page-title">랭킹</h1>
-    <p class="muted">은퇴한 선수의 커리어가 은퇴 순간 기록으로 올라갑니다. 월간은 이번 달(한국 시간)에 은퇴한 선수만 보여줘요.</p>
+    <h1 class="page-title" th:text="#{nav.rankings}">랭킹</h1>
+    <p class="muted" th:text="#{ranking.intro}">은퇴한 선수의 커리어가 은퇴 순간 기록으로 올라갑니다. 월간은 이번 달(한국 시간)에 은퇴한 선수만 보여줘요.</p>
 
     <div class="tab-row">
         <a th:each="pd : ${periods}" class="tab" th:classappend="${pd == period} ? 'active'"
@@ -18,13 +18,15 @@
 
     <section class="card section">
         <h2 class="section-title" th:text="${period.label} + ' · ' + ${category.label}">전체 · 커리어 누적 연봉</h2>
-        <p class="muted small" th:if="${category.name() == 'AVG'}">통산 1,500타석 이상</p>
-        <p class="muted small" th:if="${category.name() == 'ERA'}">통산 450이닝 이상</p>
-        <p class="muted" th:if="${#lists.isEmpty(rows)}">아직 기록이 없습니다. 은퇴한 선수가 생기면 여기에 올라와요.</p>
+        <p class="muted small" th:if="${category.name() == 'AVG'}" th:text="#{ranking.avgQualifier}">통산 1,500타석 이상</p>
+        <p class="muted small" th:if="${category.name() == 'ERA'}" th:text="#{ranking.eraQualifier}">통산 450이닝 이상</p>
+        <p class="muted" th:if="${#lists.isEmpty(rows)}" th:text="#{ranking.empty}">아직 기록이 없습니다. 은퇴한 선수가 생기면 여기에 올라와요.</p>
         <div class="table-wrap" th:unless="${#lists.isEmpty(rows)}">
             <table class="stat-table">
                 <thead>
-                <tr><th>순위</th><th class="left">선수</th><th class="left">구단주</th><th>포지션</th><th>시즌</th><th>은퇴</th>
+                <tr><th th:text="#{ranking.col.rank}">순위</th><th class="left" th:text="#{ranking.col.player}">선수</th>
+                    <th class="left" th:text="#{ranking.col.owner}">구단주</th><th th:text="#{ranking.col.position}">포지션</th>
+                    <th th:text="#{ranking.col.seasons}">시즌</th><th th:text="#{ranking.col.retired}">은퇴</th>
                     <th th:text="${category.label}">값</th></tr>
                 </thead>
                 <tbody>
@@ -36,7 +38,7 @@
                     <td class="left" th:text="${r.entry().nickname}">닉네임</td>
                     <td th:text="${r.entry().position.shortName}">SS</td>
                     <td th:text="${r.entry().seasons}">15</td>
-                    <td th:text="${r.entry().finalAge} + '세 · ' + ${#temporals.format(r.entry().retiredAt, 'yyyy.MM.dd')}">40세</td>
+                    <td th:text="#{ranking.retiredAt(${r.entry().finalAge}, ${#temporals.format(r.entry().retiredAt, 'yyyy.MM.dd')})}">40세</td>
                     <td>
                         <strong th:switch="${category.name()}">
                             <span th:case="'EARNINGS'" th:text="${@fmt.money(r.entry().careerEarnings)}">$0</span>

@@ -1,5 +1,6 @@
 package com.mlbgame.league;
 
+import com.mlbgame.common.Messages;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -51,6 +52,11 @@ public class Team {
 
     public String getNameKo() {
         return nameKo;
+    }
+
+    /** 화면 표시명: 한국어 화면은 한글 이름, 영어 화면은 영문 이름 */
+    public String getDisplayName() {
+        return Messages.english() ? name : nameKo;
     }
 
     public String getLeague() {

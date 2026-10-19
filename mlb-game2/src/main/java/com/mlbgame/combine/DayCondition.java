@@ -1,6 +1,7 @@
 package com.mlbgame.combine;
 
 import com.mlbgame.common.Dice;
+import com.mlbgame.common.Messages;
 
 /**
  * 컴바인 당일 컨디션. 모든 종목 점수에 같은 편차가 더해진다.
@@ -36,7 +37,7 @@ public enum DayCondition {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("DayCondition." + name(), label);
     }
 
     public int getOffset() {

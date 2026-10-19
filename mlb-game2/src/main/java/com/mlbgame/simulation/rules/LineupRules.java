@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.rules;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Position;
@@ -42,7 +43,7 @@ public final class LineupRules {
         }
 
         public String getLabel() {
-            return label;
+            return Messages.text("LineupRules.Standing." + name(), label);
         }
     }
 

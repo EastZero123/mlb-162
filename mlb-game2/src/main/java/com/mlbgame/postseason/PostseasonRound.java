@@ -1,5 +1,7 @@
 package com.mlbgame.postseason;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 포스트시즌 라운드 (MLB 2022~ 방식). 홈 경기 배정: 3전제는 모두 상위 시드 홈, 5전제 2-2-1, 7전제 2-3-2.
  */
@@ -42,7 +44,7 @@ public enum PostseasonRound {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("PostseasonRound." + name(), label);
     }
 
     public int getMaxGames() {

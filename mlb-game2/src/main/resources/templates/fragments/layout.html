@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title th:text="${title} + ' | MLB 선수 키우기'">MLB 선수 키우기</title>
+    <title th:text="${title} + ' | ' + #{app.name}">MLB 선수 키우기</title>
     <!-- 홈 화면에 추가하면 주소창 없이 앱처럼 열린다 -->
     <link rel="manifest" th:href="@{/manifest.webmanifest}">
     <meta name="theme-color" content="#0b3d91" media="(prefers-color-scheme: light)">
@@ -11,7 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MLB 키우기">
+    <meta name="apple-mobile-web-app-title" th:content="#{app.shortName}" content="MLB 키우기">
     <meta name="format-detection" content="telephone=no">
     <link rel="apple-touch-icon" th:href="@{/icons/icon-180.png}">
     <link rel="icon" type="image/png" th:href="@{/icons/icon-192.png}">
@@ -20,22 +20,31 @@
 </head>
 <body>
 <header th:fragment="header" class="site-header">
-    <a class="brand" th:href="@{/dashboard}">⚾ MLB 선수 키우기</a>
+    <a class="brand" th:href="@{/dashboard}" th:text="'⚾ ' + #{app.name}">⚾ MLB 선수 키우기</a>
     <div class="header-right" sec:authorize="isAuthenticated()"
          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <a class="nav-link" th:href="@{/rankings}">랭킹</a>
-        <a class="nav-link" th:href="@{/patch-notes}">패치노트</a>
+        <a class="nav-link" th:href="@{/rankings}" th:text="#{nav.rankings}">랭킹</a>
+        <a class="nav-link" th:href="@{/patch-notes}" th:text="#{nav.patchNotes}">패치노트</a>
+        <a th:replace="~{fragments/layout :: langSwitch}"></a>
         <span class="who" sec:authentication="principal.nickname">닉네임</span>
         <form th:action="@{/logout}" method="post">
-            <button type="submit" class="btn btn-ghost">로그아웃</button>
+            <button type="submit" class="btn btn-ghost" th:text="#{nav.logout}">로그아웃</button>
         </form>
     </div>
     <div class="header-right" sec:authorize="!isAuthenticated()"
          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <a class="nav-link" th:href="@{/rankings}">랭킹</a>
-        <a class="nav-link" th:href="@{/patch-notes}">패치노트</a>
-        <a class="btn btn-ghost" th:href="@{/login}">로그인</a>
+        <a class="nav-link" th:href="@{/rankings}" th:text="#{nav.rankings}">랭킹</a>
+        <a class="nav-link" th:href="@{/patch-notes}" th:text="#{nav.patchNotes}">패치노트</a>
+        <a th:replace="~{fragments/layout :: langSwitch}"></a>
+        <a class="btn btn-ghost" th:href="@{/login}" th:text="#{nav.login}">로그인</a>
     </div>
 </header>
+
+<!-- 언어 전환: 지금 화면 주소에 ?lang= 만 붙인다 (선택은 쿠키에 저장) -->
+<a th:fragment="langSwitch" class="nav-link lang-switch"
+   th:with="en=${#locale.language == 'en'}"
+   th:href="${en} ? '?lang=ko' : '?lang=en'"
+   th:attr="lang=${en} ? 'ko' : 'en'"
+   th:text="${en} ? '한국어' : 'English'">English</a>
 </body>
 </html>

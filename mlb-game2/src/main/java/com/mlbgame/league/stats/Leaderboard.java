@@ -1,5 +1,6 @@
 package com.mlbgame.league.stats;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.simulation.game.BattingLine;
 import com.mlbgame.simulation.game.PitchingLine;
 import java.util.Comparator;
@@ -49,7 +50,7 @@ public final class Leaderboard {
         }
 
         public String getLabel() {
-            return label;
+            return Messages.text("Leaderboard.Category." + name(), label);
         }
 
         public boolean isRate() {

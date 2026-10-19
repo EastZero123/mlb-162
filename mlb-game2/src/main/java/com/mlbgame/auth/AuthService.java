@@ -1,5 +1,6 @@
 package com.mlbgame.auth;
 
+import com.mlbgame.common.Messages;
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,17 +24,17 @@ public class AuthService {
         String nickname = form.getNickname().trim();
 
         if (userRepository.existsByLoginId(loginId)) {
-            throw new DuplicateUserException("loginId", "이미 사용 중인 아이디입니다.");
+            throw new DuplicateUserException("loginId", Messages.get("signup.duplicate.loginId"));
         }
         if (userRepository.existsByNickname(nickname)) {
-            throw new DuplicateUserException("nickname", "이미 사용 중인 닉네임입니다.");
+            throw new DuplicateUserException("nickname", Messages.get("signup.duplicate.nickname"));
         }
 
         try {
             return userRepository.saveAndFlush(new User(loginId, passwordEncoder.encode(form.getPassword()), nickname));
         } catch (DataIntegrityViolationException e) {
             // 동시 가입으로 사전 검사를 통과한 경우 — 유니크 제약이 최종 방어선
-            throw new DuplicateUserException("loginId", "이미 사용 중인 아이디 또는 닉네임입니다.");
+            throw new DuplicateUserException("loginId", Messages.get("signup.duplicate.either"));
         }
     }
 }

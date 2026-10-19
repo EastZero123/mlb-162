@@ -1,5 +1,6 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -8,6 +9,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class PlayerNotFoundException extends RuntimeException {
 
     public PlayerNotFoundException() {
-        super("선수를 찾을 수 없습니다.");
+        super(Messages.get("error.playerNotFound"));
     }
 }

@@ -1,6 +1,7 @@
 package com.mlbgame.home;
 
 import com.mlbgame.auth.AuthUser;
+import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.player.Player;
@@ -38,10 +39,10 @@ public class HomeController {
         return "redirect:/dashboard";
     }
 
-    /** 패치노트 (로그인 없이 공개). 내용은 templates/patch-notes.html 에 직접 작성 */
+    /** 패치노트 (로그인 없이 공개). 내용은 templates/patch-notes.html (영어: patch-notes-en.html) 에 직접 작성 */
     @GetMapping("/patch-notes")
     public String patchNotes() {
-        return "patch-notes";
+        return Messages.english() ? "patch-notes-en" : "patch-notes";
     }
 
     @GetMapping("/dashboard")

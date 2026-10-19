@@ -4,6 +4,8 @@ import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
@@ -64,7 +66,7 @@ public class StatFormat {
             return "-";
         }
         String suffix = level == null ? "" : level.getTeamSuffix();
-        return suffix.isEmpty() ? team.getNameKo() : team.getNameKo() + " " + suffix;
+        return suffix.isEmpty() ? team.getDisplayName() : team.getDisplayName() + " " + suffix;
     }
 
     /** 하이라이트 문장 앞에 붙일 아이콘 — 문장의 핵심 키워드로 고른다 (앞에 있는 규칙이 우선) */
@@ -72,17 +74,37 @@ public class StatFormat {
         if (highlight == null) {
             return "•";
         }
-        if (highlight.contains("부상")) return "🚑";
-        if (highlight.contains("블론")) return "💥";
-        if (highlight.contains("끝내기")) return "🎉";
-        if (highlight.contains("홈런")) return "💣";
-        if (highlight.contains("탈삼진 쇼")) return "🔥";
-        if (highlight.contains("세이브") || highlight.contains("구원승")) return "🔒";
-        if (highlight.contains("역전")) return "🔄";
-        if (highlight.contains("맹타") || highlight.contains("타점")) return "🏏";
-        if (highlight.contains("보살") || highlight.contains("도루 저지")) return "🧤";
-        if (highlight.contains("이닝")) return "⚾";
+        if (has(highlight, "부상", "Injury")) return "🚑";
+        if (has(highlight, "블론", "Blown save")) return "💥";
+        if (has(highlight, "끝내기", "walk-off")) return "🎉";
+        if (has(highlight, "홈런", "home run", "grand slam")) return "💣";
+        if (has(highlight, "탈삼진 쇼", "strikeout show")) return "🔥";
+        if (has(highlight, "세이브", "구원승", "save", "in relief")) return "🔒";
+        if (has(highlight, "역전", "go-ahead")) return "🔄";
+        if (has(highlight, "맹타", "타점", "big day", "RBI")) return "🏏";
+        if (has(highlight, "보살", "도루 저지", "assist", "base stealer")) return "🧤";
+        if (has(highlight, "이닝", " IP")) return "⚾";
         return "•";
+    }
+
+    /** 한국어·영어 하이라이트 키워드 중 하나라도 들어 있는지 */
+    private static boolean has(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 월: "5월" / "May" */
+    public String month(int month) {
+        return Messages.month(month);
+    }
+
+    /** 월 (짧게): "5월" / "May", "Apr" */
+    public String monthShort(int month) {
+        return Messages.english() ? Month.of(month).getDisplayName(TextStyle.SHORT, Locale.ENGLISH) : month + "월";
     }
 
     /** 이닝별 득점 표 칸: 진행하지 않은 말 공격은 "X" */

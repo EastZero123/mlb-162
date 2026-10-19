@@ -1,6 +1,7 @@
 package com.mlbgame.season;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.simulation.rules.PitcherUsage;
 import com.mlbgame.simulation.series.SeriesResult;
@@ -172,7 +173,7 @@ public class PlayerSeason extends BaseTimeEntity {
     /** 훈련을 마쳐 다음 시리즈를 진행할 수 있게 함 — {@code TrainingService}, 능력치가 모두 100이면 {@code SeasonService} */
     public void completeTraining() {
         if (!trainingPending) {
-            throw new SeasonProgressException("지금은 훈련할 차례가 아닙니다.");
+            throw new SeasonProgressException(Messages.get("season.error.notTrainingTime"));
         }
         trainingPending = false;
     }
@@ -180,7 +181,7 @@ public class PlayerSeason extends BaseTimeEntity {
     /** FA 이적: 시즌을 시작하기 전(1번 시리즈 전)에만 소속 구단 변경 */
     public void relocate(Long teamId) {
         if (nextSeriesNo != 1) {
-            throw new SeasonProgressException("시즌 도중에는 소속 구단을 바꿀 수 없습니다.");
+            throw new SeasonProgressException(Messages.get("season.error.relocateMidSeason"));
         }
         this.teamId = teamId;
     }

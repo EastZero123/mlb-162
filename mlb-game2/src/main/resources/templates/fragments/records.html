@@ -10,18 +10,18 @@
 <th:block th:fragment="label(r)">
     <th:block th:if="${r.split}">
         <span th:text="${@fmt.teamName(r.team(), r.level())}">뉴욕 양키스</span>
-        <span class="champion-mark" th:if="${r.champion()}" title="월드시리즈 우승">🏆</span>
+        <span class="champion-mark" th:if="${r.champion()}" th:title="#{records.champion}">🏆</span>
     </th:block>
-    <th:block th:if="${r.kind().name() == 'YEAR_TOTAL'}" th:text="'합계 (' + ${r.teamCount()} + '팀)'">합계 (2팀)</th:block>
-    <th:block th:if="${r.kind().name() == 'CAREER_TOTAL'}">통산</th:block>
+    <th:block th:if="${r.kind().name() == 'YEAR_TOTAL'}" th:text="#{records.yearTotal(${r.teamCount()})}">합계 (2팀)</th:block>
+    <th:block th:if="${r.kind().name() == 'CAREER_TOTAL'}" th:text="#{records.careerTotal}">통산</th:block>
 </th:block>
 
 <div th:fragment="batting(rows, showYear)" class="table-wrap">
     <table class="stat-table">
         <thead>
-        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th>G</th><th>PA</th><th>AB</th><th>H</th>
+        <tr><th th:if="${showYear}" th:text="#{records.year}">연도</th><th class="left" th:text="#{records.team}">소속</th><th>G</th><th>PA</th><th>AB</th><th>H</th>
             <th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>SO</th><th>SB</th>
-            <th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th>득점권</th></tr>
+            <th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th th:text="#{records.risp}">득점권</th></tr>
         </thead>
         <tbody>
         <tr th:each="r : ${rows}" th:with="b=${r.batting()}" th:classappend="${r.total} ? 'total-row'">
@@ -52,7 +52,7 @@
 <div th:fragment="pitching(rows, showYear)" class="table-wrap">
     <table class="stat-table">
         <thead>
-        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th>G</th><th>GS</th><th>W</th><th>L</th>
+        <tr><th th:if="${showYear}" th:text="#{records.year}">연도</th><th class="left" th:text="#{records.team}">소속</th><th>G</th><th>GS</th><th>W</th><th>L</th>
             <th>SV</th><th>BS</th><th>IP</th><th>H</th><th>R</th><th>BB</th><th>SO</th><th>HR</th>
             <th>ERA</th><th>WHIP</th><th>K/9</th><th>BB/9</th><th>QS</th></tr>
         </thead>
@@ -86,11 +86,11 @@
 <div th:fragment="detailHitting(rows, showYear)" class="table-wrap">
     <table class="stat-table">
         <thead>
-        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th>
-            <th title="순장타율 (SLG − AVG)">ISO</th><th title="인플레이 타구 타율">BABIP</th>
-            <th title="타석당 볼넷">BB%</th><th title="타석당 삼진">K%</th>
-            <th title="가중 출루율">wOBA</th><th title="리그 평균 100">wRC+</th><th title="리그 평균 100">OPS+</th>
-            <th title="대체 선수 대비 승리 기여">WAR</th></tr>
+        <tr><th th:if="${showYear}" th:text="#{records.year}">연도</th><th class="left" th:text="#{records.team}">소속</th>
+            <th th:title="#{records.tip.iso}">ISO</th><th th:title="#{records.tip.babip}">BABIP</th>
+            <th th:title="#{records.tip.bbPa}">BB%</th><th th:title="#{records.tip.kPa}">K%</th>
+            <th th:title="#{records.tip.woba}">wOBA</th><th th:title="#{records.tip.index100}">wRC+</th><th th:title="#{records.tip.index100}">OPS+</th>
+            <th th:title="#{records.tip.war}">WAR</th></tr>
         </thead>
         <tbody>
         <tr th:each="d : ${rows}" th:with="r=${d.row()},h=${d.hitter()}" th:classappend="${r.total} ? 'total-row'">
@@ -112,10 +112,10 @@
 <div th:fragment="detailPitching(rows, showYear)" class="table-wrap">
     <table class="stat-table">
         <thead>
-        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th>
-            <th title="상대 타자당 삼진">K%</th><th title="상대 타자당 볼넷">BB%</th><th>K−BB%</th>
-            <th title="수비와 무관한 실점 추정">FIP</th><th title="리그 평균 100, 높을수록 좋음">ERA+</th>
-            <th title="리그 평균 100, 낮을수록 좋음">FIP−</th><th title="대체 선수 대비 승리 기여">WAR</th></tr>
+        <tr><th th:if="${showYear}" th:text="#{records.year}">연도</th><th class="left" th:text="#{records.team}">소속</th>
+            <th th:title="#{records.tip.kBf}">K%</th><th th:title="#{records.tip.bbBf}">BB%</th><th>K−BB%</th>
+            <th th:title="#{records.tip.fip}">FIP</th><th th:title="#{records.tip.eraPlus}">ERA+</th>
+            <th th:title="#{records.tip.fipMinus}">FIP−</th><th th:title="#{records.tip.war}">WAR</th></tr>
         </thead>
         <tbody>
         <tr th:each="d : ${rows}" th:with="r=${d.row()},t=${d.pitcher()}" th:classappend="${r.total} ? 'total-row'">
@@ -134,20 +134,21 @@
 </div>
 
 <!-- 세부 지표 설명 (표 아래) -->
-<p th:fragment="detailNote" class="muted small">
+<p th:fragment="detailNote" class="muted small" th:text="#{records.detailNote}">
     wRC+·OPS+·ERA+ 는 리그 평균이 100(높을수록 좋음), FIP− 는 100(낮을수록 좋음), WAR 는 대체 선수 대비 승리 기여입니다.
-    리그 평균이 필요한 지표는 메이저에서만 계산해요(마이너는 "-"). 진행 중인 시즌은 지금까지의 리그 기록, 이번 업데이트 이전에 끝난 시즌은 기준 리그 평균으로 계산합니다.
-    투수 기록에 자책점 구분이 없어 ERA 는 실점 기준이에요.
 </p>
 
 <!-- 수비 (타자만 — 투수는 수비 기록을 만들지 않는다) -->
 <div th:fragment="fielding(rows, showYear, catcher)" class="table-wrap">
     <table class="stat-table">
         <thead>
-        <tr><th th:if="${showYear}">연도</th><th class="left">소속</th><th title="내 쪽으로 온 인플레이 타구">기회</th>
-            <th title="안타가 될 타구를 막은 횟수">막은 안타</th><th title="범위 부족으로 내준 안타">놓친 타구</th>
-            <th>실책</th><th>보살</th><th title="수비로 아낀 실점 추정">막은 실점</th>
-            <th:block th:if="${catcher}"><th>도루 저지</th><th>저지율</th></th:block></tr>
+        <tr><th th:if="${showYear}" th:text="#{records.year}">연도</th><th class="left" th:text="#{records.team}">소속</th>
+            <th th:title="#{records.tip.chances}" th:text="#{records.fld.chances}">기회</th>
+            <th th:title="#{records.tip.hitsSaved}" th:text="#{records.fld.hitsSaved}">막은 안타</th>
+            <th th:title="#{records.tip.hitsAllowed}" th:text="#{records.fld.hitsAllowed}">놓친 타구</th>
+            <th th:text="#{records.fld.errors}">실책</th><th th:text="#{records.fld.assists}">보살</th>
+            <th th:title="#{records.tip.runsSaved}" th:text="#{records.fld.runsSaved}">막은 실점</th>
+            <th:block th:if="${catcher}"><th th:text="#{records.fld.caughtStealing}">도루 저지</th><th th:text="#{records.fld.csRate}">저지율</th></th:block></tr>
         </thead>
         <tbody>
         <tr th:each="r : ${rows}" th:if="${r.fielding() != null}" th:with="f=${r.fielding()}"

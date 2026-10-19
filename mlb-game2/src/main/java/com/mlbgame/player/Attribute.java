@@ -1,5 +1,6 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
 import java.util.List;
 
 /**
@@ -55,11 +56,11 @@ public enum Attribute {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Attribute." + name(), label);
     }
 
     public String getDescription() {
-        return description;
+        return Messages.text("Attribute." + name() + ".desc", description);
     }
 
     /** 포지션이 사용하는 능력치 11개 (화면 표시 순서) */

@@ -1,6 +1,7 @@
 package com.mlbgame.award;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -57,7 +58,7 @@ public class Award extends BaseTimeEntity {
     public String getTitle() {
         boolean monthly = type.name().endsWith("_OF_MONTH");
         if (monthly) {
-            return (3 + afterSeries / 9) + "월 " + type.getLabel();
+            return Messages.get("award.monthlyTitle", Messages.month(3 + afterSeries / 9), type.getLabel());
         }
         return seasonYear + " " + type.getLabel();
     }

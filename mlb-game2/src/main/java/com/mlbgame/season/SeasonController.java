@@ -4,6 +4,7 @@ import com.mlbgame.auth.AuthUser;
 import com.mlbgame.award.AwardService;
 import com.mlbgame.award.StatPointLog;
 import com.mlbgame.award.StatPointService;
+import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.league.world.LeagueWorldRepository;
 import com.mlbgame.trade.TradeEvent;
@@ -101,7 +102,7 @@ public class SeasonController {
         } catch (SeasonProgressException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.alreadyHandled"));
         }
         return "redirect:/players/" + playerId + "/season";
     }
@@ -119,7 +120,7 @@ public class SeasonController {
         } catch (SeasonProgressException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.alreadyHandled"));
         }
         return "redirect:/players/" + playerId + "/season";
     }
@@ -133,7 +134,7 @@ public class SeasonController {
         } catch (SeasonProgressException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 진행 중인 요청이 있습니다. 잠시 후 다시 시도해 주세요.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.inProgressRetry"));
         }
         return "redirect:/players/" + playerId + "/season";
     }
@@ -146,13 +147,13 @@ public class SeasonController {
             Player player = playerService.getOwned(authUser.getId(), playerId);
             int progress = player.trainingProgress(attribute);
             redirectAttributes.addFlashAttribute("trainedMessage", progress == 0
-                    ? attribute.getLabel() + " +1 → " + log.getValueAfter()
-                    : attribute.getLabel() + " 훈련 " + progress + "/" + player.trainingCost(attribute)
-                      + " (" + (player.trainingCost(attribute) - progress) + "회 더 하면 +1)");
+                    ? Messages.get("training.done", attribute.getLabel(), log.getValueAfter())
+                    : Messages.get("training.progress", attribute.getLabel(), progress, player.trainingCost(attribute),
+                      player.trainingCost(attribute) - progress));
         } catch (SeasonProgressException | InvalidTrainingException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.alreadyHandled"));
         }
         return "redirect:/players/" + playerId + "/season";
     }
@@ -164,11 +165,11 @@ public class SeasonController {
         try {
             StatPointLog log = statPointService.spend(authUser.getId(), playerId, attribute);
             redirectAttributes.addFlashAttribute("trainedMessage",
-                    "포인트 사용 — " + attribute.getLabel() + " +1 → " + log.getValueAfter());
+                    Messages.get("points.used", attribute.getLabel(), log.getValueAfter()));
         } catch (InvalidTrainingException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.alreadyHandled"));
         }
         return "redirect:/players/" + playerId + "/season";
     }

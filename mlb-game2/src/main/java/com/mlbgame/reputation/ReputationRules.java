@@ -1,5 +1,7 @@
 package com.mlbgame.reputation;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 평판 규칙 (순수 계산). 평판 0~100, 시작 50. 평판 50 이면 모든 보정이 평판 도입 전과 같다.
  *
@@ -40,11 +42,11 @@ public final class ReputationRules {
     }
 
     public static String grade(int reputation) {
-        if (reputation >= 80) return "존경받음";
-        if (reputation >= 60) return "좋음";
-        if (reputation >= 40) return "보통";
-        if (reputation >= 20) return "나쁨";
-        return "최악";
+        if (reputation >= 80) return Messages.get("reputation.grade.respected");
+        if (reputation >= 60) return Messages.get("reputation.grade.good");
+        if (reputation >= 40) return Messages.get("reputation.grade.average");
+        if (reputation >= 20) return Messages.get("reputation.grade.bad");
+        return Messages.get("reputation.grade.worst");
     }
 
     /** 트레이드 요청 성공률 보정 (평판 50 = 1.0, 0 = 0.6, 100 = 1.4) */

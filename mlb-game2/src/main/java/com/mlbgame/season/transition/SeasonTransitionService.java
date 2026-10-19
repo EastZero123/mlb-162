@@ -1,6 +1,7 @@
 package com.mlbgame.season.transition;
 
 import com.mlbgame.career.CareerService;
+import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
@@ -104,7 +105,7 @@ public class SeasonTransitionService {
         Player player = playerService.getOwned(userId, playerId);
         PlayerSeason season = seasonService.currentSeason(userId, playerId);
         if (!ready(playerId, season)) {
-            throw new SeasonProgressException("정규시즌·마지막 훈련·포스트시즌을 모두 마친 뒤 다음 시즌으로 넘어갈 수 있습니다.");
+            throw new SeasonProgressException(Messages.get("offseason.error.notReady"));
         }
         LeagueWorld world = leagueWorldService.getOrCreate(playerId);
         int year = world.getCurrentYear();
@@ -150,7 +151,7 @@ public class SeasonTransitionService {
         lines.addAll(1, contractNews);
         lines.addAll(1, reputationNews);
         if (wasInjured && !retired) {
-            lines.add(1, "부상 회복: 오프시즌 동안 부상에서 완전히 회복했습니다");
+            lines.add(1, Messages.get("offseason.injuryRecovered"));
         }
         return new Result(year, year + 1, player.getAge(), aging, retired, lines);
     }
@@ -166,21 +167,21 @@ public class SeasonTransitionService {
         NumberFormat money = NumberFormat.getIntegerInstance(Locale.US);
         List<String> lines = new ArrayList<>();
         if (retired) {
-            lines.add(player.getName() + " 선수가 " + player.getAge() + "세로 은퇴합니다. 그동안 수고 많았습니다!");
+            lines.add(Messages.get("offseason.retired", player.getName(), player.getAge()));
         } else {
-            lines.add(year + " 시즌 시작! " + player.getName() + " " + player.getAge() + "세");
+            lines.add(Messages.get("offseason.seasonStart", year, player.getName(), player.getAge()));
         }
         if (!aging.isEmpty()) {
-            lines.add("노화: " + aging.entrySet().stream()
+            lines.add(Messages.get("offseason.aging", aging.entrySet().stream()
                     .map(e -> e.getKey().getLabel() + " " + e.getValue())
-                    .collect(Collectors.joining(", ")));
+                    .collect(Collectors.joining(", "))));
         }
         lines.addAll(trainingNews);
-        lines.add("리그 소식: 은퇴 " + report.retired() + "명 · FA " + report.freeAgents() + "명 · FA 계약 "
-                + report.signings().size() + "건 · 유망주 콜업 " + report.callUps() + "명");
+        lines.add(Messages.get("offseason.leagueNews", report.retired(), report.freeAgents(), report.signings().size(),
+                report.callUps()));
         for (Signing s : report.signings().stream().limit(3).toList()) {
-            lines.add("대형 계약: " + s.name() + " (OVR " + Math.round(s.overall()) + ") → "
-                    + teams.get(s.teamId()).getNameKo() + " " + s.years() + "년 $" + money.format(s.salary()) + "/년");
+            lines.add(Messages.get("offseason.bigSigning", s.name(), Math.round(s.overall()),
+                    teams.get(s.teamId()).getDisplayName(), s.years(), "$" + money.format(s.salary())));
         }
         return lines;
     }

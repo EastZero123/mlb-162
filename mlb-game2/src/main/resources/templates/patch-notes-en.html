@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{nav.patchNotes})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container narrow">
+    <h1 class="page-title">Patch notes</h1>
+    <p class="muted">The update history. The latest patch is at the top.</p>
+
+    <!--
+        영어 화면용 패치노트 (한국어는 patch-notes.html). 새 패치는 두 파일 모두에 추가한다.
+    -->
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.5</span>
+                English service
+            </h2>
+            <time class="muted small" datetime="2026-10-19">2026.10.19</time>
+        </header>
+
+        <h3 class="patch-kind">New</h3>
+        <ul class="patch-list">
+            <li>Every screen is now available in English. Switch any time with "English" / "한국어" in the top menu (above the card on the login page); your choice is remembered.</li>
+            <li>On your first visit the game follows your browser language: Korean browsers open in Korean, everything else in English.</li>
+            <li>In English, club names are shown in English, and game highlights and stat lines are written in English too.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.4</span>
+                Use it like a mobile app
+            </h2>
+            <time class="muted small" datetime="2026-10-18">2026.10.18</time>
+        </header>
+
+        <h3 class="patch-kind">New</h3>
+        <ul class="patch-list">
+            <li>You can add the game to your phone’s home screen. Opened from the home screen icon, it runs full screen like an app, without the address bar.</li>
+            <li>On mobile Chrome, an "Install" prompt appears at the bottom of the screen. Once you close it, it won’t show again.</li>
+            <li>If your connection drops, you’ll see a connection notice with a "Try again" button instead of a blank screen.</li>
+        </ul>
+
+        <h3 class="patch-kind">Improved</h3>
+        <ul class="patch-list">
+            <li>On mobile, the top menu now stays visible as you scroll down.</li>
+            <li>Removed the blue tap highlight and double-tap zoom on buttons, and added a pressed feel instead.</li>
+            <li>Fixed input fields zooming the page when tapped (iPhone).</li>
+            <li>Adjusted spacing so the menu and content aren’t hidden on phones with a notch or home bar.</li>
+            <li>Matched the top bar color to the game and added a baseball app icon.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.2</span>
+                Play feedback · stats overhaul · reputation system
+            </h2>
+            <time class="muted small" datetime="2026-10-17">2026.10.17</time>
+        </header>
+
+        <h3 class="patch-kind">Bug fixes</h3>
+        <ul class="patch-list">
+            <li>Fixed a bug where an accepted trade request didn’t actually change your club.</li>
+            <li>Fixed the "Please enter a valid value" popup when making an FA counteroffer. Amounts are now rounded to the nearest $10,000 automatically.</li>
+            <li>Fixed free agency only bringing a short deal from your old club. Several clubs now send offers with different terms.</li>
+            <li>Fixed an injury at the end of a season still showing the next season. You now fully recover when the season rolls over (contract renewal step).</li>
+            <li>Fixed training progress overflowing like "6/4" when aging lowered the training cost. Overflowing progress now raises the attribute right away and the rest carries over.</li>
+        </ul>
+
+        <h3 class="patch-kind">Improved</h3>
+        <ul class="patch-list">
+            <li>Season stats are split by year, level and club. Bouncing between levels via call-ups and send-downs merges into one row, and a mid-season trade shows per-team rows plus a total.</li>
+            <li>Career stats are split into MLB and minor league tables, with postseason stats in a separate table.</li>
+            <li>Clubs on a tight budget now still send FA offers, at lower amounts.</li>
+            <li>When you become a free agent, your old club always makes an offer. Without budget room, it offers less.</li>
+        </ul>
+
+        <h3 class="patch-kind">New</h3>
+        <ul class="patch-list">
+            <li>Added advanced stats: hitters ISO·BABIP·BB%·K%·wOBA·wRC+·OPS+·WAR, pitchers K%·BB%·K−BB%·FIP·ERA+·FIP−·WAR (stats that need league averages are MLB only).</li>
+            <li>Fielding stats (chances, hits saved, errors, assists, runs saved, catcher caught stealing) are shown per season and for the career.</li>
+            <li>World Series titles are shown on the career page. A title counts when the club you finished the season with in the majors wins, and adds +5 Hall of Fame points.</li>
+            <li>Added a reputation system. It affects trade request success, counteroffer risk, the number of FA offers and extension chances. It drops with denied trade requests and failed counteroffers, and rises when you accept terms as offered, win awards or win titles.</li>
+            <li>You can add a no-trade clause when signing. With the clause, no club-initiated trades happen; trades you request yourself are still possible.</li>
+            <li>Trade request success chance and counteroffer acceptance chance are now shown on screen.</li>
+            <li>Added this patch notes page. Rankings, retired player profiles and patch notes are viewable without logging in.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.1</span>
+                Balance patch
+            </h2>
+            <time class="muted small" datetime="2026-10-16">2026.10.16</time>
+        </header>
+
+        <h3 class="patch-kind">Improved</h3>
+        <ul class="patch-list">
+            <li>Reaching 100 overall is harder, and stat growth in the 90–95 and 95–100 ranges is now more noticeable.</li>
+            <li>Added a payroll system tied to team strength.</li>
+        </ul>
+    </article>
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.0</span>
+                Launch
+            </h2>
+            <time class="muted small" datetime="2026-10-15">2026.10.15</time>
+        </header>
+
+        <h3 class="patch-kind">New</h3>
+        <ul class="patch-list">
+            <li>The first version of the game.</li>
+        </ul>
+    </article>
+</main>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.mlbgame.ranking;
 
+import com.mlbgame.common.Messages;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -30,7 +31,7 @@ public class RankingService {
         }
 
         public String getLabel() {
-            return label;
+            return Messages.text("RankingService.Period." + name(), label);
         }
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mlbgame.award.AwardService;
 import com.mlbgame.award.AwardType;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
@@ -90,7 +91,7 @@ public class PostseasonService {
         Player player = playerService.getOwned(userId, playerId);
         PlayerSeason season = seasonService.currentSeason(userId, playerId);
         if (!season.isCompleted() || season.isTrainingPending()) {
-            throw new SeasonProgressException("정규시즌 54시리즈와 마지막 훈련을 마친 뒤 포스트시즌이 열립니다.");
+            throw new SeasonProgressException(Messages.get("postseason.error.notReady"));
         }
         return repository.findByPlayerIdAndSeasonYear(playerId, season.getSeasonYear())
                 .orElseGet(() -> start(userId, player, season));
@@ -117,7 +118,7 @@ public class PostseasonService {
         Player player = playerService.getOwned(userId, playerId);
         Postseason postseason = getOrStart(userId, playerId);
         if (postseason.isDone()) {
-            throw new SeasonProgressException("이번 포스트시즌은 끝났습니다.");
+            throw new SeasonProgressException(Messages.get("postseason.error.over"));
         }
         LeagueWorld world = leagueWorldService.getOrCreate(playerId);
         Bracket bracket = read(postseason.getBracketJson(), Bracket.class, Bracket::new);
@@ -256,9 +257,9 @@ public class PostseasonService {
 
     private static String summary(Player player, UserSeries user) {
         if (player.isPitcher()) {
-            return user.pitching.games == 0 ? "등판 없음" : user.pitching.games + "경기 " + user.pitching.summary();
+            return user.pitching.games == 0 ? Messages.get("line.didNotPitch") : Messages.get("line.games", user.pitching.games, user.pitching.summary());
         }
-        return user.batting.plateAppearances == 0 ? "출전 없음" : user.batting.summary();
+        return user.batting.plateAppearances == 0 ? Messages.get("line.didNotPlay") : user.batting.summary();
     }
 
     private <T> T read(String json, Class<T> type, Supplier<T> empty) {

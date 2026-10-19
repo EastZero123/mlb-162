@@ -1,5 +1,7 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
+
 public enum Position {
     SP("SP", "선발투수", true),
     CP("CP", "마무리투수", true),
@@ -27,7 +29,7 @@ public enum Position {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Position." + name(), label);
     }
 
     public boolean isPitcher() {

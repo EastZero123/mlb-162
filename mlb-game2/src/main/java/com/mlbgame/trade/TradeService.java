@@ -1,6 +1,7 @@
 package com.mlbgame.trade;
 
 import com.mlbgame.common.Dice;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
@@ -68,10 +69,10 @@ public class TradeService {
         }
         if (!rumorActive(player, season)) {
             return repository.save(new TradeEvent(player.getId(), season.getSeasonYear(), seriesNo, Kind.RUMOR,
-                    player.getTeam().getId(), null, player.getTeam().getNameKo() + "가 " + player.getName()
-                    + "의 트레이드를 검토 중이라는 소문이 돕니다"));
+                    player.getTeam().getId(), null, Messages.get("trade.note.rumor", player.getTeam().getDisplayName(),
+                    player.getName())));
         }
-        return execute(player, season, seriesNo, ctx, "트레이드 마감 전 전격 이적");
+        return execute(player, season, seriesNo, ctx, Messages.get("trade.note.deadlineDeal"));
     }
 
     /**
@@ -82,26 +83,26 @@ public class TradeService {
     public TradeEvent request(Player player, PlayerSeason season, LeagueWorld world, Map<Integer, int[]> myMlbResults) {
         int seriesNo = season.getSeriesPlayed();
         if (seriesNo > TradeRules.DEADLINE_SERIES || season.isCompleted()) {
-            throw new SeasonProgressException("트레이드 마감(36번째 시리즈)이 지났습니다.");
+            throw new SeasonProgressException(Messages.get("trade.error.deadlinePassed"));
         }
         if (requestDenied(player, season)
                 || repository.findByPlayerIdAndSeasonYearOrderByIdAsc(player.getId(), season.getSeasonYear()).stream()
                 .anyMatch(e -> e.getKind() == Kind.TRADE)) {
-            throw new SeasonProgressException("이번 시즌에는 더 이상 트레이드를 요청할 수 없습니다.");
+            throw new SeasonProgressException(Messages.get("trade.error.noMoreRequests"));
         }
         Context ctx = context(player, season, Math.max(1, seriesNo), world, myMlbResults);
         if (dice.nextDouble() < TradeRules.requestSuccess(player.getReputation())) {
             boolean waived = player.isNoTradeClause();
             player.waiveNoTradeClause();                     // 스스로 요청했으니 거부 조항은 소멸
-            reputationService.change(player, season.getSeasonYear(), ReputationRules.TRADE_REQUEST_GRANTED, "트레이드 요청");
+            reputationService.change(player, season.getSeasonYear(), ReputationRules.TRADE_REQUEST_GRANTED, Messages.get("reputation.reason.tradeRequest"));
             return execute(player, season, seriesNo, ctx,
-                    waived ? "트레이드 요청 수용 (거부 조항 소멸)" : "트레이드 요청 수용");
+                    Messages.get(waived ? "trade.note.requestGrantedWaived" : "trade.note.requestGranted"));
         }
         int lost = reputationService.change(player, season.getSeasonYear(), ReputationRules.TRADE_REQUEST_DENIED,
-                "트레이드 요청 거절당함");
+                Messages.get("reputation.reason.tradeRequestDenied"));
         return repository.save(new TradeEvent(player.getId(), season.getSeasonYear(), seriesNo, Kind.REQUEST_DENIED,
-                player.getTeam().getId(), null, "구단이 트레이드 요청을 거절했습니다. 관계가 틀어져 이후 트레이드될 가능성이 커졌습니다"
-                + (lost != 0 ? " (평판 " + lost + ")" : "")));
+                player.getTeam().getId(), null, Messages.get("trade.note.requestDenied")
+                + (lost != 0 ? Messages.get("reputation.lost", lost) : "")));
     }
 
     /** 지금 트레이드를 요청하면 성사될 확률 (화면 표시용) */
@@ -139,7 +140,7 @@ public class TradeService {
         player.tradeTo(destination.getTeam());
         season.trade(destination.getTeam().getId());
         return repository.save(new TradeEvent(player.getId(), season.getSeasonYear(), seriesNo, Kind.TRADE, from,
-                destination.getTeam().getId(), note + " — " + destination.getTeam().getNameKo() + " 유니폼을 입습니다"));
+                destination.getTeam().getId(), Messages.get("trade.note.newUniform", note, destination.getTeam().getDisplayName())));
     }
 
     /** 경쟁 팀 중 (승률 − .5 + 예산 여유) 가중 무작위 */

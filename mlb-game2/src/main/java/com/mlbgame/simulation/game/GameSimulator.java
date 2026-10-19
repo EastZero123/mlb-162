@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.game;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Hand;
 import com.mlbgame.player.Position;
 import com.mlbgame.simulation.BatterProfile;
@@ -404,7 +405,7 @@ public class GameSimulator {
                     if (assist) {
                         outs++;
                         fld.assists++;
-                        highlights.add(inningLabel(1 - us) + " 홈 송구로 주자 아웃 (보살)");
+                        highlights.add(Messages.get("hl.assist", inningLabel(1 - us)));
                     } else {
                         scoreRunner(runner, t);
                     }
@@ -606,30 +607,30 @@ public class GameSimulator {
             int diffAfter = score[us] - score[them];
             String tag = "";
             if (gameOver) {
-                tag = "끝내기 ";
+                tag = Messages.get("hl.tag.walkOff") + " ";
             } else if (diffBefore < 0 && diffAfter > 0) {
-                tag = "역전 ";
+                tag = Messages.get("hl.tag.goAhead") + " ";
             } else if (diffBefore == 0 && diffAfter > 0 && inning >= 7) {
-                tag = "균형을 깨는 ";
+                tag = Messages.get("hl.tag.tieBreaking") + " ";
             } else if (diffBefore < 0 && diffAfter == 0) {
-                tag = "동점 ";
+                tag = Messages.get("hl.tag.tying") + " ";
             }
             String when = inningLabel(us);
             if (result == PaResult.HOME_RUN) {
                 String kind = switch (rbi) {
-                    case 1 -> "솔로";
-                    case 2 -> "투런";
-                    case 3 -> "스리런";
-                    default -> "만루";
+                    case 1 -> Messages.get("hl.hr.solo");
+                    case 2 -> Messages.get("hl.hr.twoRun");
+                    case 3 -> Messages.get("hl.hr.threeRun");
+                    default -> Messages.get("hl.hr.grandSlam");
                 };
-                highlights.add(when + " " + tag + kind + " 홈런!");
+                highlights.add(Messages.get("hl.homeRun", when, tag, kind));
             } else if (result.isHit() && rbi > 0 && !tag.isEmpty()) {
                 String hit = switch (result) {
-                    case DOUBLE -> "2루타";
-                    case TRIPLE -> "3루타";
-                    default -> "적시타";
+                    case DOUBLE -> Messages.get("hl.hit.double");
+                    case TRIPLE -> Messages.get("hl.hit.triple");
+                    default -> Messages.get("hl.hit.single");
                 };
-                highlights.add(when + " " + tag + hit + " (" + rbi + "타점)");
+                highlights.add(Messages.get("hl.hit", when, tag, hit, rbi));
             }
         }
 
@@ -673,7 +674,7 @@ public class GameSimulator {
         }
 
         String inningLabel(int battingTeam) {
-            return inning + "회" + (battingTeam == 0 ? "초" : "말");
+            return Messages.get(battingTeam == 0 ? "hl.inning.top" : "hl.inning.bottom", inning);
         }
 
         // ------------------------------------------------------------ 승패·세이브
@@ -692,19 +693,19 @@ public class GameSimulator {
                         pit.qualityStarts = 1;
                     }
                     String line = pit.summary();
-                    if (pit.qualityStarts == 1) line += " 퀄리티스타트";
-                    if (pit.wins == 1) line += " · 승리투수";
-                    if (pit.losses == 1) line += " · 패전";
+                    if (pit.qualityStarts == 1) line += Messages.get("hl.qualityStart");
+                    if (pit.wins == 1) line += Messages.get("hl.win");
+                    if (pit.losses == 1) line += Messages.get("hl.loss");
                     highlights.add(line);
                     if (pit.strikeouts >= 8 && !pitcher.repertoire().isEmpty()) {
                         String pitch = pitcher.repertoire().get(rng.nextInt(pitcher.repertoire().size())).getLabel();
-                        highlights.add(pitch + "을(를) 앞세워 " + pit.strikeouts + "탈삼진 쇼");
+                        highlights.add(Messages.get("hl.strikeoutShow", pitch, pit.strikeouts));
                     }
                 } else if (closerUsed) {
                     if (closerEntryDiff >= 1 && closerEntryDiff <= 3) {
                         if (closerExitDiff >= 1 && win) {
                             pit.saves = 1;
-                            highlights.add(closerEntryDiff + "점 차 리드를 지켜내고 세이브");
+                            highlights.add(Messages.get("hl.save", closerEntryDiff));
                         } else if (closerExitDiff <= 0) {
                             pit.blownSaves = 1;
                             if (win) {
@@ -712,12 +713,12 @@ public class GameSimulator {
                             } else if (closerExitDiff < 0) {
                                 pit.losses = 1;
                             }
-                            highlights.add("블론세이브 (" + pit.summary() + ")");
+                            highlights.add(Messages.get("hl.blownSave", pit.summary()));
                         }
                     } else if (closerEntryDiff == 0) {
                         if (win && closerExitDiff >= 0) {
                             pit.wins = 1;
-                            highlights.add("동점 상황 등판, 구원승");
+                            highlights.add(Messages.get("hl.reliefWin"));
                         } else if (!win && closerExitDiff < 0) {
                             pit.losses = 1;
                         }
@@ -725,10 +726,10 @@ public class GameSimulator {
                 }
             }
             if (hitter != null && hitterAppeared && (bat.hits >= 3 || bat.rbi >= 4 || bat.homeRuns >= 2)) {
-                highlights.add(bat.summary() + " 맹타");
+                highlights.add(Messages.get("hl.bigDay", bat.summary()));
             }
             if (fld.caughtStealing > 0) {
-                highlights.add("도루 저지 " + fld.caughtStealing + "회");
+                highlights.add(Messages.get("hl.caughtStealing", fld.caughtStealing));
             }
         }
     }

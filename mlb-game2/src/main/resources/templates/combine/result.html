@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('컴바인 결과')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{combine.result.title})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow" th:classappend="${justFinished} ? 'reveal-all'">
-    <h1 class="page-title">컴바인 결과 · <span th:text="${player.name}">선수</span></h1>
+    <h1 class="page-title"><th:block th:text="#{combine.result.title}">컴바인 결과</th:block> · <span th:text="${player.name}">선수</span></h1>
 
     <section class="card section">
-        <p class="condition">당일 컨디션 <strong th:text="${summary.dayCondition.label}"
+        <p class="condition"><th:block th:text="#{combine.dayCondition}">당일 컨디션</th:block> <strong th:text="${summary.dayCondition.label}"
                                               th:class="'cond-' + ${summary.dayCondition.name()}">보통</strong></p>
         <ul class="combine-list">
             <li class="reveal" th:each="r, st : ${results}" th:style="'animation-delay:' + ${st.index * 0.6} + 's'">
@@ -26,26 +26,26 @@
         <div class="grade-row">
             <div class="grade" th:text="${summary.grade}" th:classappend="'grade-' + ${summary.grade}">B</div>
             <div>
-                <p class="muted small">종합 평가 점수</p>
+                <p class="muted small" th:text="#{combine.totalScore}">종합 평가 점수</p>
                 <p class="total" th:text="${#numbers.formatDecimal(summary.totalScore, 1, 1)}">43.0</p>
             </div>
         </div>
-        <p class="scout-comment" th:text="'스카우트: “' + ${summary.scoutComment} + '”'">코멘트</p>
+        <p class="scout-comment" th:text="#{combine.scoutSays(${summary.scoutComment})}">코멘트</p>
         <ul class="bonus-list muted small">
-            <li>종목 평균 + 인터뷰 가산점 <span th:text="'+' + ${summary.interviewBonus}">+2</span>
-                <span th:if="${summary.interviewMatched}">(스카우트 취향 적중!)</span>
+            <li><th:block th:text="#{combine.interviewBonus}">종목 평균 + 인터뷰 가산점</th:block> <span th:text="'+' + ${summary.interviewBonus}">+2</span>
+                <span th:if="${summary.interviewMatched}" th:text="#{combine.interviewMatched}">(스카우트 취향 적중!)</span>
                 <span th:unless="${summary.interviewMatched}"
-                      th:text="'(스카우트는 ' + ${summary.scoutPreference.trait} + ' 성향을 선호)'"></span>
+                      th:text="#{combine.scoutPrefers(${summary.scoutPreference.trait})}"></span>
             </li>
-            <li th:if="${summary.ageBonus > 0}">고졸 나이 프리미엄 <span th:text="'+' + ${summary.ageBonus}">+10</span></li>
+            <li th:if="${summary.ageBonus > 0}"><th:block th:text="#{combine.ageBonus}">고졸 나이 프리미엄</th:block> <span th:text="'+' + ${summary.ageBonus}">+10</span></li>
         </ul>
 
         <form th:if="${player.stage.name() == 'COMBINE_DONE'}"
               th:action="@{/players/{id}/draft(id=${player.id})}" method="post">
-            <button type="submit" class="btn btn-primary">드래프트 시작</button>
+            <button type="submit" class="btn btn-primary" th:text="#{combine.startDraft}">드래프트 시작</button>
         </form>
         <a th:if="${player.stage.name() == 'DRAFTED'}" class="btn btn-ghost"
-           th:href="@{/players/{id}/draft(id=${player.id})}">드래프트 결과 보기</a>
+           th:href="@{/players/{id}/draft(id=${player.id})}" th:text="#{combine.viewDraft}">드래프트 결과 보기</a>
     </section>
 </main>
 </body>

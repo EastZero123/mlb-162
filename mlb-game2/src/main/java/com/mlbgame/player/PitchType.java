@@ -1,5 +1,7 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
+
 public enum PitchType {
     FOUR_SEAM("포심"),
     SINKER("싱커"),
@@ -17,7 +19,7 @@ public enum PitchType {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("PitchType." + name(), label);
     }
 
     /** 구종 2~4 슬롯에서 고를 수 있는 구종 (포심은 고정 슬롯) */

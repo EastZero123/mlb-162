@@ -2,6 +2,7 @@ package com.mlbgame.combine;
 
 import com.mlbgame.auth.AuthUser;
 import com.mlbgame.combine.CombineService.CombineReport;
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
 import com.mlbgame.player.PlayerStage;
@@ -36,7 +37,7 @@ public class CombineController {
         model.addAttribute("player", player);
         if (player.getStage() == PlayerStage.CREATED) {
             model.addAttribute("tests", CombineTest.forPosition(player.getPosition()));
-            model.addAttribute("question", InterviewAnswer.QUESTION);
+            model.addAttribute("question", InterviewAnswer.question());
             model.addAttribute("answers", InterviewAnswer.values());
             return "combine/intro";
         }
@@ -55,7 +56,7 @@ public class CombineController {
             return "redirect:/players/" + playerId + "/combine";
         }
         if (answer == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "스카우트 인터뷰 답변을 선택해 주세요.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("combine.error.noAnswer"));
             return "redirect:/players/" + playerId + "/combine";
         }
         combineService.run(authUser.getId(), playerId, answer);

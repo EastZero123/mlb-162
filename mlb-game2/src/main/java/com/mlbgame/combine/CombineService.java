@@ -1,6 +1,7 @@
 package com.mlbgame.combine;
 
 import com.mlbgame.common.Dice;
+import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
 import com.mlbgame.player.Education;
 import com.mlbgame.player.Player;
@@ -78,7 +79,7 @@ public class CombineService {
         CombineResult best = results.stream().max(Comparator.comparingInt(CombineResult::getScore)).orElseThrow();
         CombineTest test = best.getTestType();
         String record = String.format("%." + test.getDecimals() + "f", best.getRecordValue());
-        return grade.getComment() + " 특히 " + test.getLabel() + "(" + record + test.getUnit() + ")이 눈에 띄었다.";
+        return grade.getComment() + Messages.get("combine.comment.best", test.getLabel(), record, test.getUnit());
     }
 
     private static double clamp(double value, double min, double max) {

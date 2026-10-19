@@ -1,5 +1,7 @@
 package com.mlbgame.simulation.game;
 
+import com.mlbgame.common.Messages;
+
 /** 타격 기록 (경기·시리즈·시즌 누적에 공용) */
 public class BattingLine {
 
@@ -67,12 +69,11 @@ public class BattingLine {
 
     /** "4타수 2안타 1홈런 3타점" */
     public String summary() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(atBats).append("타수 ").append(hits).append("안타");
-        if (homeRuns > 0) sb.append(' ').append(homeRuns).append("홈런");
-        if (rbi > 0) sb.append(' ').append(rbi).append("타점");
-        if (walks > 0) sb.append(' ').append(walks).append("볼넷");
-        if (stolenBases > 0) sb.append(' ').append(stolenBases).append("도루");
+        StringBuilder sb = new StringBuilder(Messages.get("line.bat.hits", hits, atBats));
+        if (homeRuns > 0) sb.append(Messages.get("line.bat.hr", homeRuns));
+        if (rbi > 0) sb.append(Messages.get("line.bat.rbi", rbi));
+        if (walks > 0) sb.append(Messages.get("line.bat.bb", walks));
+        if (stolenBases > 0) sb.append(Messages.get("line.bat.sb", stolenBases));
         return sb.toString();
     }
 }

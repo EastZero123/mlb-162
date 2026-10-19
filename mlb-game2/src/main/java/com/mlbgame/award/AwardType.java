@@ -1,5 +1,7 @@
 package com.mlbgame.award;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 상 종류. 포인트 = 스탯업 기회 수 (설계: docs/player-attributes.md 5장), 보너스 = 수상 보너스(달러, 수령 원장).
  */
@@ -40,7 +42,7 @@ public enum AwardType {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("AwardType." + name(), label);
     }
 
     public int getPoints() {

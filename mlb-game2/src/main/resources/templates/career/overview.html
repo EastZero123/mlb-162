@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('커리어')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{nav.career})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container" th:with="p=${summary.player()}">
@@ -12,8 +12,8 @@
                 <div class="slot-no" th:text="${p.position.label} + ' · ' + ${p.handLabel} + ' · ' + ${p.nationality.label}">유격수</div>
                 <h1 class="player-name big" th:text="${p.name}">선수</h1>
                 <p class="player-meta">
-                    <span th:text="${p.age} + '세'">30세</span> ·
-                    <span th:text="${p.retired} ? '은퇴' : ${@fmt.teamName(p.team, p.leagueLevel)}">팀</span>
+                    <span th:text="#{common.age(${p.age})}">30세</span> ·
+                    <span th:text="${p.retired} ? #{career.retired} : ${@fmt.teamName(p.team, p.leagueLevel)}">팀</span>
                 </p>
             </div>
             <div class="ovr big">OVR <strong th:text="${@fmt.one(p.overall)}">70.0</strong></div>
@@ -24,22 +24,22 @@
         </div>
         <div class="award-banner champion-banner" th:if="${summary.championships > 0}">
             <span class="award-icon">🏆</span>
-            <strong th:text="'월드시리즈 우승 ' + ${summary.championships} + '회'">월드시리즈 우승 2회</strong>
+            <strong th:text="#{career.championships(${summary.championships})}">월드시리즈 우승 2회</strong>
             <span class="muted small"
                   th:text="'(' + ${#strings.listJoin(summary.championshipYears(), ', ')} + ')'">(2028, 2031)</span>
         </div>
         <dl class="draft-facts">
-            <div><dt>명예의 전당 점수</dt><dd th:text="${summary.hallOfFameScore()}">0</dd></div>
-            <div><dt>메이저 주요 시즌</dt><dd th:text="${summary.majorSeasons()} + '시즌'">0</dd></div>
-            <div><dt>메이저 통산 WAR</dt><dd th:text="${@fmt.war(summary.careerWar)}">0.0</dd></div>
-            <div><dt>수상 포인트</dt><dd th:text="${summary.awardPoints()}">0</dd></div>
-            <div><dt>커리어 수령액</dt><dd th:text="${@fmt.money(summary.careerEarnings())}">$0</dd></div>
+            <div><dt th:text="#{career.hofScore}">명예의 전당 점수</dt><dd th:text="${summary.hallOfFameScore()}">0</dd></div>
+            <div><dt th:text="#{career.majorSeasons}">메이저 주요 시즌</dt><dd th:text="#{career.seasonCount(${summary.majorSeasons()})}">0</dd></div>
+            <div><dt th:text="#{career.mlbWar}">메이저 통산 WAR</dt><dd th:text="${@fmt.war(summary.careerWar)}">0.0</dd></div>
+            <div><dt th:text="#{career.awardPoints}">수상 포인트</dt><dd th:text="${summary.awardPoints()}">0</dd></div>
+            <div><dt th:text="#{stats.careerEarnings}">커리어 수령액</dt><dd th:text="${@fmt.money(summary.careerEarnings())}">$0</dd></div>
         </dl>
     </section>
 
     <!-- 능력치 (은퇴 선수는 은퇴 시점) -->
     <section class="card section">
-        <h2 class="section-title" th:text="${p.retired} ? '능력치 (은퇴 시점)' : '능력치'">능력치</h2>
+        <h2 class="section-title" th:text="${p.retired} ? #{career.statsAtRetirement} : #{common.stats}">능력치</h2>
         <ul class="attr-list">
             <li th:each="a : ${p.attributeViews}">
                 <span class="attr-label" th:text="${a.label()}">컨택</span>
@@ -48,50 +48,50 @@
             </li>
         </ul>
         <p class="pitch-repertoire" th:if="${p.pitcher}">
-            <span class="muted small">구종</span>
+            <span class="muted small" th:text="#{common.pitches}">구종</span>
             <span class="chip" th:each="t : ${p.pitchRepertoire}" th:text="${t.label}">포심</span>
         </p>
     </section>
 
     <!-- 메이저 통산 -->
     <section class="card section">
-        <h2 class="section-title">메이저리그 통산</h2>
+        <h2 class="section-title" th:text="#{career.mlbTotals}">메이저리그 통산</h2>
         <p th:unless="${p.pitcher}" th:with="b=${summary.mlbBatting()}"
-           th:text="${b.games} + '경기 ' + ${b.summary()} + ' · 타율 ' + ${@fmt.rate(b.average)} + ' · OPS ' + ${@fmt.rate(b.ops)}">통산</p>
+           th:text="#{career.mlbBatting(${b.games}, ${b.summary()}, ${@fmt.rate(b.average)}, ${@fmt.rate(b.ops)})}">통산</p>
         <p th:if="${p.pitcher}" th:with="t=${summary.mlbPitching()}"
-           th:text="${t.games} + '경기 ' + ${t.wins} + '승 ' + ${t.losses} + '패 ' + ${t.saves} + '세이브 · ' + ${t.innings} + '이닝 · ERA ' + ${@fmt.two(t.era)} + ' · ' + ${t.strikeouts} + '탈삼진'">통산</p>
+           th:text="#{career.mlbPitching(${t.games}, ${t.wins}, ${t.losses}, ${t.saves}, ${t.innings}, ${@fmt.two(t.era)}, ${t.strikeouts})}">통산</p>
     </section>
 
     <!-- 정규시즌 기록: 연도·레벨·구단별 (같은 해 같은 레벨·구단은 한 줄) -->
     <section class="card section" th:with="rec=${summary.records()}">
-        <h2 class="section-title">정규시즌 기록</h2>
-        <p class="muted small" th:if="${rec.empty}">아직 출전 기록이 없습니다.</p>
+        <h2 class="section-title" th:text="#{career.regularSeason}">정규시즌 기록</h2>
+        <p class="muted small" th:if="${rec.empty}" th:text="#{common.noRecords}">아직 출전 기록이 없습니다.</p>
 
         <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
-            <h3 class="sub-title">메이저리그</h3>
+            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.mlb()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.mlb()}, true)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(rec.minors())}">
-            <h3 class="sub-title">마이너리그</h3>
+            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.minors()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.minors()}, true)}"></div></th:block>
         </th:block>
-        <p class="muted small" th:unless="${#lists.isEmpty(rec.mlb())}">
+        <p class="muted small" th:unless="${#lists.isEmpty(rec.mlb())}" th:text="#{career.totalNote}">
             합계 행은 메이저에서 한 해에 두 팀 이상 뛰었을 때만 표시돼요. 🏆 는 그 팀으로 시즌을 마치고 월드시리즈 우승.
         </p>
     </section>
 
     <!-- 세부 지표: 정규시즌 기록과 같은 행 구성 -->
     <section class="card section" th:unless="${summary.records().empty}" th:with="det=${summary.detail()}">
-        <h2 class="section-title">세부 지표</h2>
+        <h2 class="section-title" th:text="#{records.detail}">세부 지표</h2>
         <th:block th:unless="${#lists.isEmpty(det.mlb())}">
-            <h3 class="sub-title">메이저리그</h3>
+            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.mlb()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.mlb()}, true)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(det.minors())}">
-            <h3 class="sub-title">마이너리그</h3>
+            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.minors()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.minors()}, true)}"></div></th:block>
         </th:block>
@@ -100,55 +100,55 @@
 
     <!-- 수비 기록 (타자) -->
     <section class="card section" th:unless="${p.pitcher or summary.records().empty}" th:with="rec=${summary.records()}">
-        <h2 class="section-title">수비 기록</h2>
+        <h2 class="section-title" th:text="#{career.fielding}">수비 기록</h2>
         <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
-            <h3 class="sub-title">메이저리그</h3>
+            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
             <div th:replace="~{fragments/records :: fielding(${rec.mlb()}, true, ${p.position.name() == 'C'})}"></div>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(rec.minors())}">
-            <h3 class="sub-title">마이너리그</h3>
+            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
             <div th:replace="~{fragments/records :: fielding(${rec.minors()}, true, ${p.position.name() == 'C'})}"></div>
         </th:block>
     </section>
 
     <!-- 포스트시즌 기록 -->
     <section class="card section" th:unless="${#lists.isEmpty(summary.postseason())}">
-        <h2 class="section-title">포스트시즌 기록</h2>
+        <h2 class="section-title" th:text="#{career.postseason}">포스트시즌 기록</h2>
         <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${summary.postseason()}, true)}"></div></th:block>
         <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${summary.postseason()}, true)}"></div></th:block>
     </section>
 
     <section class="card section" th:unless="${#lists.isEmpty(summary.awards())}">
-        <h2 class="section-title" th:text="'수상 (' + ${#lists.size(summary.awards())} + ')'">수상</h2>
+        <h2 class="section-title" th:text="#{career.awards(${#lists.size(summary.awards())})}">수상</h2>
         <p class="pitch-repertoire">
             <span class="chip" th:each="aw : ${summary.awards()}" th:text="${aw.title}">MVP</span>
         </p>
     </section>
 
     <section class="card section" th:unless="${#lists.isEmpty(summary.levelHistory()) and #lists.isEmpty(summary.trades())}">
-        <h2 class="section-title">이동 이력</h2>
+        <h2 class="section-title" th:text="#{career.moves}">이동 이력</h2>
         <ul class="schedule-list">
             <li th:each="c : ${summary.levelHistory()}"
-                th:text="${c.seasonYear} + '시즌 ' + ${c.afterSeries} + '번째 시리즈 후 · ' + ${c.fromLevel.label} + ' → ' + ${c.toLevel.label}">승격</li>
+                th:text="#{career.levelMove(${c.seasonYear}, ${c.afterSeries}, ${c.fromLevel.label}, ${c.toLevel.label})}">승격</li>
             <li th:each="t : ${summary.trades()}" th:if="${t.kind.name() == 'TRADE'}"
-                th:text="${t.seasonYear} + '시즌 트레이드 · ' + ${teams[t.fromTeamId].nameKo} + ' → ' + ${teams[t.toTeamId].nameKo}">트레이드</li>
+                th:text="#{career.tradeMove(${t.seasonYear}, ${teams[t.fromTeamId].displayName}, ${teams[t.toTeamId].displayName})}">트레이드</li>
         </ul>
     </section>
 
     <!-- 은퇴 -->
     <section class="card section" th:unless="${p.retired or readOnly == true}">
-        <h2 class="section-title">은퇴</h2>
-        <p class="muted small">은퇴하면 선수 슬롯이 비고, 기록은 이 화면에 영구 보관됩니다. 되돌릴 수 없어요. (45세가 되면 자동 은퇴)</p>
+        <h2 class="section-title" th:text="#{career.retire}">은퇴</h2>
+        <p class="muted small" th:text="#{career.retire.help}">은퇴하면 선수 슬롯이 비고, 기록은 이 화면에 영구 보관됩니다. 되돌릴 수 없어요. (45세가 되면 자동 은퇴)</p>
         <form th:action="@{/players/{id}/retire(id=${p.id})}" method="post" class="ask-form">
-            <input type="text" name="confirm" placeholder="'은퇴' 입력" required>
-            <button type="submit" class="btn btn-ghost">은퇴하기</button>
+            <input type="text" name="confirm" th:placeholder="#{career.retire.placeholder}" required>
+            <button type="submit" class="btn btn-ghost" th:text="#{career.retire.submit}">은퇴하기</button>
         </form>
     </section>
 
     <div class="actions">
-        <a class="btn btn-ghost" th:unless="${p.retired or readOnly == true}" th:href="@{/players/{id}/season(id=${p.id})}">시즌 화면으로</a>
-        <a class="btn btn-ghost" th:href="@{/rankings}">랭킹</a>
-        <a class="btn btn-ghost" th:href="@{/dashboard}">대시보드</a>
+        <a class="btn btn-ghost" th:unless="${p.retired or readOnly == true}" th:href="@{/players/{id}/season(id=${p.id})}" th:text="#{nav.toSeasonScreen}">시즌 화면으로</a>
+        <a class="btn btn-ghost" th:href="@{/rankings}" th:text="#{nav.rankings}">랭킹</a>
+        <a class="btn btn-ghost" th:href="@{/dashboard}" th:text="#{nav.dashboard}">대시보드</a>
     </div>
 </main>
 </body>

@@ -1,5 +1,6 @@
 package com.mlbgame.award;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
@@ -25,10 +26,10 @@ public class StatPointService {
     public StatPointLog spend(Long userId, Long playerId, Attribute attribute) {
         Player player = playerService.getOwned(userId, playerId);
         if (player.getStatPoints() <= 0) {
-            throw new InvalidTrainingException("보유한 스탯업 포인트가 없습니다.");
+            throw new InvalidTrainingException(Messages.get("error.noStatPoints"));
         }
         if (!player.canTrain(attribute)) {
-            throw new InvalidTrainingException(attribute.getLabel() + "에는 포인트를 쓸 수 없습니다. (포지션에 없거나 이미 100)");
+            throw new InvalidTrainingException(Messages.get("points.error.cannotSpend", attribute.getLabel()));
         }
         int valueAfter = player.spendStatPoint(attribute);
         return logRepository.save(new StatPointLog(player.getId(), attribute, valueAfter));

@@ -61,11 +61,11 @@ public class LeagueController {
         List<Candidate> candidates = new ArrayList<>();
         for (PlayerLine line : leagueStatsService.lines(world, season.getSeasonYear(),
                 LeagueStatsService.monthsThrough(completedMonths))) {
-            candidates.add(new Candidate(line.npc().getName(), line.team().getNameKo(),
+            candidates.add(new Candidate(line.npc().getName(), line.team().getDisplayName(),
                     line.isPitcher() ? null : line.batting(), line.isPitcher() ? line.pitching() : null, false));
         }
         if (mlb.played()) {
-            candidates.add(new Candidate(player.getName(), player.getTeam().getNameKo(),
+            candidates.add(new Candidate(player.getName(), player.getTeam().getDisplayName(),
                     player.isPitcher() ? null : mlb.batting(), player.isPitcher() ? mlb.pitching() : null, true));
         }
         Map<Category, List<Leaderboard.Entry>> leaders = new LinkedHashMap<>();

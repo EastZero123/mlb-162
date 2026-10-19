@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.rules;
 
+import com.mlbgame.common.Messages;
 import java.util.random.RandomGenerator;
 
 /**
@@ -36,7 +37,7 @@ public enum Condition {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Condition." + name(), label);
     }
 
     public int getOffset() {

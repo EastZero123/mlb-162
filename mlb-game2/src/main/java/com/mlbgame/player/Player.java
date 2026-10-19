@@ -1,6 +1,7 @@
 package com.mlbgame.player;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractType;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
@@ -225,7 +226,7 @@ public class Player extends BaseTimeEntity {
     /** 포인트 1개를 써서 능력치 +1 */
     public int spendStatPoint(Attribute attribute) {
         if (statPoints <= 0) {
-            throw new IllegalStateException("보유한 스탯업 포인트가 없습니다.");
+            throw new IllegalStateException(Messages.get("error.noStatPoints"));
         }
         int value = raise(attribute);
         statPoints--;
@@ -316,9 +317,9 @@ public class Player extends BaseTimeEntity {
             }
             int after = attributes.getOrDefault(attribute, 0);
             if (after > before) {
-                lines.add("훈련 정산: " + attribute.getLabel() + " +" + (after - before) + " → " + after
+                lines.add(Messages.get("training.settled", attribute.getLabel(), after - before, after)
                         + (progress > 0 && canTrain(attribute)
-                        ? " (진행도 " + progress + "/" + trainingCost(attribute) + " 이월)" : ""));
+                        ? Messages.get("training.settled.carry", progress, trainingCost(attribute)) : ""));
             }
         }
         return lines;
@@ -347,7 +348,7 @@ public class Player extends BaseTimeEntity {
      */
     public int train(Attribute attribute) {
         if (!canTrain(attribute)) {
-            throw new IllegalArgumentException(attribute.getLabel() + "은(는) 훈련할 수 없습니다.");
+            throw new IllegalArgumentException(Messages.get("error.cannotTrain", attribute.getLabel()));
         }
         int progress = trainingProgress(attribute) + 1;
         if (progress >= trainingCost(attribute)) {      // 노화로 능력치가 내려가 비용이 줄었을 수도 있으니 >=
@@ -371,7 +372,7 @@ public class Player extends BaseTimeEntity {
     /** 능력치 바로 +1 — 훈련 비용이 다 찼을 때, 스탯업 포인트 */
     private int raise(Attribute attribute) {
         if (!canTrain(attribute)) {
-            throw new IllegalArgumentException(attribute.getLabel() + "은(는) 올릴 수 없습니다.");
+            throw new IllegalArgumentException(Messages.get("error.cannotRaise", attribute.getLabel()));
         }
         int value = attributes.get(attribute) + 1;
         attributes.put(attribute, value);
@@ -390,7 +391,7 @@ public class Player extends BaseTimeEntity {
 
     public void requireStage(PlayerStage expected) {
         if (stage != expected) {
-            throw new InvalidStageException("현재 단계(" + stage + ")에서는 진행할 수 없습니다.");
+            throw new InvalidStageException(Messages.get("error.invalidStage", stage));
         }
     }
 
@@ -488,8 +489,8 @@ public class Player extends BaseTimeEntity {
             return null;
         }
         return leagueLevel == null || leagueLevel.getTeamSuffix().isEmpty()
-                ? team.getNameKo()
-                : team.getNameKo() + " " + leagueLevel.getTeamSuffix();
+                ? team.getDisplayName()
+                : team.getDisplayName() + " " + leagueLevel.getTeamSuffix();
     }
 
     public PlayerStage getStage() {
@@ -508,9 +509,9 @@ public class Player extends BaseTimeEntity {
         return team;
     }
 
-    /** "우투좌타" 형식 */
+    /** "우투좌타" 형식 (영어: "B/T: L/R") */
     public String getHandLabel() {
-        return throwsHand.getLabel() + "투" + bats.getLabel() + "타";
+        return Messages.get("player.hands", throwsHand.getLabel(), bats.getLabel(), throwsHand.name(), bats.name());
     }
 
     public record AttributeView(Attribute attribute, String label, int value) {

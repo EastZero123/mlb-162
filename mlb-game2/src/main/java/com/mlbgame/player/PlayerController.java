@@ -1,6 +1,7 @@
 package com.mlbgame.player;
 
 import com.mlbgame.auth.AuthUser;
+import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
 import jakarta.validation.Valid;
 import java.util.Arrays;
@@ -48,7 +49,7 @@ public class PlayerController {
     public String createPage(@AuthenticationPrincipal AuthUser authUser, @ModelAttribute("form") PlayerCreateForm form,
                              RedirectAttributes redirectAttributes) {
         if (!playerService.hasFreeSlot(authUser.getId())) {
-            redirectAttributes.addFlashAttribute("errorMessage", "선수 슬롯이 가득 찼습니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("create.error.slotsFull"));
             return "redirect:/dashboard";
         }
         return "players/new";

@@ -1,6 +1,7 @@
 package com.mlbgame.season.promotion;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.LeagueLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,9 +65,9 @@ public class LevelChange extends BaseTimeEntity {
     /** "더블A 승격" / "싱글A 강등" / 메이저면 "메이저리그 콜업!" */
     public String getMessage() {
         if (isPromotion()) {
-            return toLevel == LeagueLevel.MLB ? "메이저리그 콜업!" : toLevel.getLabel() + " 승격!";
+            return toLevel == LeagueLevel.MLB ? Messages.get("level.callUp") : Messages.get("level.promoted", toLevel.getLabel());
         }
-        return toLevel.getLabel() + " 강등";
+        return Messages.get("level.demoted", toLevel.getLabel());
     }
 
     public Long getPlayerId() {

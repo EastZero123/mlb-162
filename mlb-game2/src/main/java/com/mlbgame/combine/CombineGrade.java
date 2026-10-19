@@ -1,5 +1,7 @@
 package com.mlbgame.combine;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 컴바인 종합 등급과 등급별 드래프트 라운드 범위.
  * 기준 점수는 대졸(능력치 40) / 고졸(능력치 30 + 나이 프리미엄 10) 모두 평균 43 안팎이 되도록 잡았다.
@@ -52,6 +54,6 @@ public enum CombineGrade {
     }
 
     public String getComment() {
-        return comment;
+        return Messages.text("CombineGrade." + name() + ".comment", comment);
     }
 }

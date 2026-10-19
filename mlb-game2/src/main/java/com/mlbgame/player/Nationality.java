@@ -1,5 +1,7 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
+
 public enum Nationality {
     USA("미국"),
     JAPAN("일본"),
@@ -13,6 +15,6 @@ public enum Nationality {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Nationality." + name(), label);
     }
 }

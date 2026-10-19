@@ -1,6 +1,7 @@
 package com.mlbgame.contract;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,7 +34,7 @@ public class ContractOffer extends BaseTimeEntity {
         }
 
         public String getLabel() {
-            return label;
+            return Messages.text("ContractOffer.Kind." + name(), label);
         }
     }
 

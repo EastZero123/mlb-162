@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${player.name})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
@@ -13,7 +13,7 @@
                 <h1 class="player-name big" th:text="${player.name}">선수 이름</h1>
                 <p class="player-meta">
                     <span th:text="${player.education.label}">고졸</span> ·
-                    <span th:text="${player.age} + '세'">18세</span> ·
+                    <span th:text="#{common.age(${player.age})}">18세</span> ·
                     <span th:text="${player.handLabel}">우투우타</span>
                 </p>
                 <p class="player-meta">
@@ -24,14 +24,14 @@
                     </th:block>
                 </p>
                 <p class="player-meta" th:if="${player.team != null}">
-                    평판 <strong th:text="${player.reputation}">50</strong>
-                    <th:block th:if="${player.noTradeClause}"> · 트레이드 거부권</th:block>
+                    <th:block th:text="#{player.reputation}">평판</th:block> <strong th:text="${player.reputation}">50</strong>
+                    <th:block th:if="${player.noTradeClause}" th:text="' · ' + #{player.noTradeClause}"> · 트레이드 거부권</th:block>
                 </p>
             </div>
             <div class="ovr big">OVR <strong th:text="${#numbers.formatDecimal(player.overall, 1, 1)}">30.0</strong></div>
         </div>
 
-        <h2 class="section-title">능력치</h2>
+        <h2 class="section-title" th:text="#{common.stats}">능력치</h2>
         <ul class="attr-list">
             <li th:each="a : ${player.attributeViews}" th:title="${a.attribute().description}">
                 <span class="attr-label">
@@ -44,20 +44,20 @@
         </ul>
 
         <p class="pitch-repertoire" th:if="${player.pitcher}">
-            <span class="muted small">구종</span>
+            <span class="muted small" th:text="#{common.pitches}">구종</span>
             <span class="chip" th:each="t : ${player.pitchRepertoire}" th:text="${t.label}">포심</span>
         </p>
 
         <div class="actions">
-            <a class="btn btn-ghost" th:href="@{/players/{id}/combine(id=${player.id})}">컴바인 기록</a>
+            <a class="btn btn-ghost" th:href="@{/players/{id}/combine(id=${player.id})}" th:text="#{player.combineRecord}">컴바인 기록</a>
             <a class="btn btn-ghost" th:if="${player.stage.name() == 'DRAFTED'}"
-               th:href="@{/players/{id}/draft(id=${player.id})}">드래프트 결과</a>
-            <a class="btn btn-ghost" th:href="@{/dashboard}">대시보드</a>
+               th:href="@{/players/{id}/draft(id=${player.id})}" th:text="#{player.draftResult}">드래프트 결과</a>
+            <a class="btn btn-ghost" th:href="@{/dashboard}" th:text="#{nav.dashboard}">대시보드</a>
         </div>
         <div class="actions" th:if="${player.stage.name() == 'DRAFTED'}">
-            <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}">시즌 진행</a>
-            <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}">시즌 기록</a>
-            <a class="btn btn-ghost" th:href="@{/players/{id}/career(id=${player.id})}">커리어</a>
+            <a class="btn btn-primary" th:href="@{/players/{id}/season(id=${player.id})}" th:text="#{dashboard.playSeason}">시즌 진행</a>
+            <a class="btn btn-ghost" th:href="@{/players/{id}/season/stats(id=${player.id})}" th:text="#{nav.seasonStats}">시즌 기록</a>
+            <a class="btn btn-ghost" th:href="@{/players/{id}/career(id=${player.id})}" th:text="#{nav.career}">커리어</a>
         </div>
     </section>
 </main>

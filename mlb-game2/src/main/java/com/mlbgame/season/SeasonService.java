@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardService;
+import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.trade.TradeEvent;
 import com.mlbgame.trade.TradeRules;
@@ -108,17 +109,17 @@ public class SeasonService {
     public SeriesOutcome playNextSeries(Long userId, Long playerId) {
         Player player = playerService.getOwned(userId, playerId);
         if (player.isRetired()) {
-            throw new SeasonProgressException("은퇴한 선수입니다.");
+            throw new SeasonProgressException(Messages.get("error.retired"));
         }
         PlayerSeason season = currentSeason(userId, playerId);
         if (season.isCompleted()) {
-            throw new SeasonProgressException("이번 시즌 일정을 모두 마쳤습니다.");
+            throw new SeasonProgressException(Messages.get("season.error.scheduleDone"));
         }
         if (season.isTrainingPending()) {
-            throw new SeasonProgressException("훈련할 능력치를 먼저 골라 주세요.");
+            throw new SeasonProgressException(Messages.get("season.error.trainFirst"));
         }
         if (contractService.hasPending(playerId)) {
-            throw new SeasonProgressException("결정하지 않은 계약 제안이 있습니다. 계약 화면에서 먼저 협상해 주세요.");
+            throw new SeasonProgressException(Messages.get("season.error.contractPending"));
         }
 
         LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
@@ -171,7 +172,7 @@ public class SeasonService {
     public TradeEvent requestTrade(Long userId, Long playerId) {
         Player player = playerService.getOwned(userId, playerId);
         if (player.isRetired()) {
-            throw new SeasonProgressException("은퇴한 선수입니다.");
+            throw new SeasonProgressException(Messages.get("error.retired"));
         }
         PlayerSeason season = currentSeason(userId, playerId);
         LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
@@ -214,7 +215,7 @@ public class SeasonService {
         PlayerSeason season = currentSeason(userId, playerId);
         SeriesRecord record = seriesRecordRepository
                 .findByPlayerIdAndSeasonYearAndSeriesNo(playerId, season.getSeasonYear(), seriesNo)
-                .orElseThrow(() -> new SeasonProgressException(seriesNo + "번째 시리즈 기록이 없습니다."));
+                .orElseThrow(() -> new SeasonProgressException(Messages.get("season.error.noSeries", seriesNo)));
         SeriesInput input = seriesRecorder.readInput(record);
         Matchup matchup = matchups(userId, playerId).get(seriesNo - 1);
         LevelChange levelChange = levelChangeRepository
@@ -282,12 +283,12 @@ public class SeasonService {
         /** 내 선수 시리즈 요약 한 줄 */
         public String mySummary() {
             if (summary.pitching() != null && summary.pitching().games > 0) {
-                return summary.pitching().games + "경기 " + summary.pitching().summary();
+                return Messages.get("line.games", summary.pitching().games, summary.pitching().summary());
             }
             if (summary.batting() != null && summary.batting().games > 0) {
                 return summary.batting().summary();
             }
-            return "출전 없음";
+            return Messages.get("line.didNotPlay");
         }
     }
 

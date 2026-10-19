@@ -1,5 +1,7 @@
 package com.mlbgame.season.earnings;
 
+import com.mlbgame.common.Messages;
+
 public enum EarningType {
     SIGNING_BONUS("계약금"),
     SALARY("연봉"),
@@ -12,6 +14,6 @@ public enum EarningType {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("EarningType." + name(), label);
     }
 }

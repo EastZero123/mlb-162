@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.rules;
 
+import com.mlbgame.common.Messages;
 import java.util.random.RandomGenerator;
 
 /** 부상 심각도와 결장 기간(시리즈 단위) */
@@ -41,6 +42,6 @@ public enum InjurySeverity {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("InjurySeverity." + name(), label);
     }
 }

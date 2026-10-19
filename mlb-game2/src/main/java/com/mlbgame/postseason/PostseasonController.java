@@ -3,6 +3,7 @@ package com.mlbgame.postseason;
 import com.mlbgame.auth.AuthUser;
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardService;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
 import com.mlbgame.player.Player;
@@ -75,7 +76,7 @@ public class PostseasonController {
         } catch (SeasonProgressException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "이미 진행 중인 요청이 있습니다.");
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("error.inProgress"));
         }
         return "redirect:/players/" + playerId + "/postseason";
     }

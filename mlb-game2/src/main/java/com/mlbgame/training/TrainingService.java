@@ -1,5 +1,6 @@
 package com.mlbgame.training;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
@@ -53,10 +54,10 @@ public class TrainingService {
         Player player = playerService.getOwned(userId, playerId);
         PlayerSeason season = seasonService.currentSeason(userId, playerId);
         if (!season.isTrainingPending()) {
-            throw new SeasonProgressException("지금은 훈련할 차례가 아닙니다. 다음 시리즈를 먼저 진행해 주세요.");
+            throw new SeasonProgressException(Messages.get("training.error.notTime"));
         }
         if (!player.canTrain(attribute)) {
-            throw new InvalidTrainingException(attribute.getLabel() + "은(는) 훈련할 수 없습니다. (포지션에 없거나 이미 100)");
+            throw new InvalidTrainingException(Messages.get("training.error.cannotTrain", attribute.getLabel()));
         }
         int valueAfter = player.train(attribute);
         season.completeTraining();

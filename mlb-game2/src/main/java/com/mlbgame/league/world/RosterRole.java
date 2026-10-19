@@ -1,5 +1,7 @@
 package com.mlbgame.league.world;
 
+import com.mlbgame.common.Messages;
+
 /** 1군 로스터 내 역할 (구단당 26명: 주전 9 + 벤치 4 + 선발 5 + 불펜 7 + 마무리 1) */
 public enum RosterRole {
     LINEUP("주전", 9),
@@ -19,7 +21,7 @@ public enum RosterRole {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("RosterRole." + name(), label);
     }
 
     public int getSlots() {

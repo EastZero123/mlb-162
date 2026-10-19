@@ -1,5 +1,6 @@
 package com.mlbgame.ranking;
 
+import com.mlbgame.common.Messages;
 import java.util.function.ToDoubleFunction;
 import org.springframework.data.domain.Sort;
 
@@ -47,7 +48,7 @@ public enum RankingCategory {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("RankingCategory." + name(), label);
     }
 
     public Qualifier getQualifier() {

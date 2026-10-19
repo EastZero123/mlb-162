@@ -1,5 +1,7 @@
 package com.mlbgame.league;
 
+import com.mlbgame.common.Messages;
+
 /**
  * 리그 레벨. 루키 → 싱글A → 더블A → 트리플A → 메이저리그 순으로 승격.
  * 마이너리그 산하팀은 실명 대신 "메이저 구단명 + 접미사"로 표시한다. 예) 디트로이트 타이거스 AA
@@ -27,11 +29,11 @@ public enum LeagueLevel {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("LeagueLevel." + name(), label);
     }
 
     /** 팀명 뒤에 붙는 레벨 표기 (메이저리그는 빈 문자열) */
     public String getTeamSuffix() {
-        return teamSuffix;
+        return Messages.text("LeagueLevel." + name() + ".suffix", teamSuffix);
     }
 }

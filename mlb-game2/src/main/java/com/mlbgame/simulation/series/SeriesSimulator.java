@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.series;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Position;
 import com.mlbgame.simulation.PlayerSnapshot;
@@ -93,7 +94,7 @@ public class SeriesSimulator {
                 wins++;
             }
             for (String line : result.highlights()) {
-                highlights.add(g + "차전 " + line);
+                highlights.add(Messages.get("hl.game", g, line));
             }
 
             boolean appeared = result.participated();
@@ -125,8 +126,10 @@ public class SeriesSimulator {
                         : InjuryRules.rollForHitter(appeared ? hitterRole : HitterRole.NONE, durability, fatigue, rng);
                 if (rolled.isPresent()) {
                     injury = rolled.get();
-                    String out = injury.isSeasonEnding() ? "시즌 아웃" : injury.seriesOut() + "시리즈 결장";
-                    highlights.add(g + "차전 부상 발생: " + injury.severity().getLabel() + " (" + out + ")");
+                    String out = injury.isSeasonEnding()
+                            ? Messages.get("injury.seasonEnding")
+                            : Messages.get("injury.seriesOut", injury.seriesOut());
+                    highlights.add(Messages.get("hl.injury", g, injury.severity().getLabel(), out));
                 }
             }
         }

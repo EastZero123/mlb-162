@@ -2,6 +2,7 @@ package com.mlbgame.reputation;
 
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardRepository;
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Player;
 import com.mlbgame.season.PlayerSeason;
 import java.util.ArrayList;
@@ -57,29 +58,29 @@ public class ReputationService {
                 .mapToInt(Award::getPoints).sum();
         List<String> parts = new ArrayList<>();
         int total = 0;
-        int award = change(player, year, ReputationRules.awardBonus(awardPoints), year + " 시즌 수상");
+        int award = change(player, year, ReputationRules.awardBonus(awardPoints), Messages.get("reputation.reason.awards", year));
         if (award != 0) {
-            parts.add("수상 +" + award);
+            parts.add(Messages.get("reputation.part.awards", award));
             total += award;
         }
         if (champion) {
-            int ring = change(player, year, ReputationRules.CHAMPIONSHIP, year + " 월드시리즈 우승");
+            int ring = change(player, year, ReputationRules.CHAMPIONSHIP, Messages.get("reputation.reason.championship", year));
             if (ring != 0) {
-                parts.add("우승 +" + ring);
+                parts.add(Messages.get("reputation.part.championship", ring));
                 total += ring;
             }
         }
         if (season.getMlbSeriesPlayed() >= MAJOR_SEASON_SERIES) {
-            int major = change(player, year, ReputationRules.MAJOR_SEASON, year + " 메이저 풀타임 시즌");
+            int major = change(player, year, ReputationRules.MAJOR_SEASON, Messages.get("reputation.reason.majorSeason", year));
             if (major != 0) {
-                parts.add("메이저 풀타임 +" + major);
+                parts.add(Messages.get("reputation.part.majorSeason", major));
                 total += major;
             }
         }
         if (total == 0) {
             return List.of();
         }
-        return List.of("평판: " + String.join(", ", parts) + " → " + player.getReputation()
-                + " (" + ReputationRules.grade(player.getReputation()) + ")");
+        return List.of(Messages.get("reputation.news", String.join(", ", parts), player.getReputation(),
+                ReputationRules.grade(player.getReputation())));
     }
 }

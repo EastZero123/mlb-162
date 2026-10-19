@@ -5,6 +5,7 @@ import com.mlbgame.auth.UserRepository;
 import com.mlbgame.award.Award;
 import com.mlbgame.combine.CombineSummary;
 import com.mlbgame.combine.CombineSummaryRepository;
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.PlayerNotFoundException;
 import com.mlbgame.player.PlayerRepository;
 import com.mlbgame.ranking.RankingEntry;
@@ -119,7 +120,7 @@ public class CareerService {
     public Player retire(Long userId, Long playerId) {
         Player player = playerService.getOwned(userId, playerId);
         if (player.isRetired()) {
-            throw new SeasonProgressException("이미 은퇴한 선수입니다.");
+            throw new SeasonProgressException(Messages.get("error.alreadyRetired"));
         }
         player.retire();
         recordRetirement(player);
@@ -178,8 +179,8 @@ public class CareerService {
         }
 
         public String getHallOfFameLabel() {
-            if (hallOfFameScore >= HALL_OF_FAME) return "명예의 전당 헌액";
-            if (hallOfFameScore >= HALL_OF_FAME_CANDIDATE) return "명예의 전당 후보";
+            if (hallOfFameScore >= HALL_OF_FAME) return Messages.get("career.hof.inducted");
+            if (hallOfFameScore >= HALL_OF_FAME_CANDIDATE) return Messages.get("career.hof.candidate");
             return null;
         }
     }

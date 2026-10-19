@@ -1,5 +1,6 @@
 package com.mlbgame.league.world;
 
+import com.mlbgame.common.Messages;
 import java.util.Set;
 
 /** 구단 재정 규모 — FA 영입력과 기본 예산을 정한다 (잘 바뀌지 않는 성향) */
@@ -30,7 +31,7 @@ public enum Market {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Market." + name(), label);
     }
 
     public long getBaseBudget() {

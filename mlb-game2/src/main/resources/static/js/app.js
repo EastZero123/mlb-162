@@ -116,11 +116,12 @@ document.addEventListener('submit', function (event) {
         if (dismissed()) return;
         var deferred = event;
 
+        var en = document.documentElement.lang === 'en';
         var bar = document.createElement('div');
         bar.className = 'install-bar';
-        bar.innerHTML = '<span>⚾ 홈 화면에 추가하면 앱처럼 쓸 수 있어요</span>' +
-            '<button type="button" class="btn btn-primary install-yes">설치</button>' +
-            '<button type="button" class="install-no" aria-label="닫기">✕</button>';
+        bar.innerHTML = '<span>⚾ ' + (en ? 'Add to your home screen to use it like an app' : '홈 화면에 추가하면 앱처럼 쓸 수 있어요') + '</span>' +
+            '<button type="button" class="btn btn-primary install-yes">' + (en ? 'Install' : '설치') + '</button>' +
+            '<button type="button" class="install-no" aria-label="' + (en ? 'Close' : '닫기') + '">✕</button>';
         document.body.appendChild(bar);
 
         bar.querySelector('.install-yes').addEventListener('click', function () {

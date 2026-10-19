@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('패치노트')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{nav.patchNotes})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow">
@@ -9,6 +9,7 @@
 
     <!--
         새 패치를 추가하는 방법: 아래 빈 틀을 복사해 이 주석 바로 아래(가장 위)에 붙여 넣고 내용만 바꾸세요.
+        영어 화면용 patch-notes-en.html 에도 같은 패치를 영어로 넣어 주세요.
         - 버전·날짜: patch-version / time 태그
         - 분류: "버그 수정", "개선", "신규" 등 <h3> 단위로 나눕니다 (안 쓰는 분류는 통째로 지우세요)
         - 항목: <li> 한 줄에 하나
@@ -32,6 +33,23 @@
             </ul>
         </article>
     -->
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v0.0.5</span>
+                영어 서비스
+            </h2>
+            <time class="muted small" datetime="2026-10-19">2026.10.19</time>
+        </header>
+
+        <h3 class="patch-kind">신규</h3>
+        <ul class="patch-list">
+            <li>모든 화면을 영어로도 볼 수 있습니다. 상단 메뉴(로그인 화면은 카드 위)의 "English" / "한국어"로 언제든 바꿀 수 있고, 선택한 언어는 기억됩니다.</li>
+            <li>처음 접속할 때는 브라우저 언어를 따릅니다. 한국어 브라우저는 한국어, 그 밖의 언어는 영어로 열려요.</li>
+            <li>영어 화면에서는 구단 이름이 영문으로 표시되고, 경기 하이라이트·기록 요약도 영어로 나옵니다.</li>
+        </ul>
+    </article>
 
     <article class="card section patch-note">
         <header class="patch-head">

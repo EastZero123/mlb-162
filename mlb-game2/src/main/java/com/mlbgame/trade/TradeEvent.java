@@ -1,6 +1,7 @@
 package com.mlbgame.trade;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.common.Messages;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -29,7 +30,7 @@ public class TradeEvent extends BaseTimeEntity {
         }
 
         public String getLabel() {
-            return label;
+            return Messages.text("TradeEvent.Kind." + name(), label);
         }
     }
 

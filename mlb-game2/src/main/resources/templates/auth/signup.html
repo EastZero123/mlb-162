@@ -1,38 +1,39 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('회원가입')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{signup.title})}"></head>
 <body>
 <main class="auth-wrap">
     <section class="card auth-card">
-        <h1 class="auth-title">회원가입</h1>
-        <p class="auth-sub">닉네임은 랭킹에 표시됩니다</p>
+        <p class="auth-lang"><a th:replace="~{fragments/layout :: langSwitch}"></a></p>
+        <h1 class="auth-title" th:text="#{signup.title}">회원가입</h1>
+        <p class="auth-sub" th:text="#{signup.sub}">닉네임은 랭킹에 표시됩니다</p>
 
         <form th:action="@{/signup}" th:object="${form}" method="post" class="form" novalidate>
-            <label for="loginId">아이디</label>
-            <input type="text" th:field="*{loginId}" autocomplete="username" placeholder="영문·숫자·_ 4~20자"
+            <label for="loginId" th:text="#{auth.loginId}">아이디</label>
+            <input type="text" th:field="*{loginId}" autocomplete="username" th:placeholder="#{signup.loginId.hint}"
                    th:classappend="${#fields.hasErrors('loginId')} ? 'invalid'">
             <p class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></p>
 
-            <label for="password">비밀번호</label>
-            <input type="password" th:field="*{password}" autocomplete="new-password" placeholder="8~64자"
+            <label for="password" th:text="#{auth.password}">비밀번호</label>
+            <input type="password" th:field="*{password}" autocomplete="new-password" th:placeholder="#{signup.password.hint}"
                    th:classappend="${#fields.hasErrors('password')} ? 'invalid'">
             <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
 
-            <label for="passwordConfirm">비밀번호 확인</label>
+            <label for="passwordConfirm" th:text="#{signup.passwordConfirm}">비밀번호 확인</label>
             <input type="password" th:field="*{passwordConfirm}" autocomplete="new-password"
                    th:classappend="${#fields.hasErrors('passwordConfirm') or #fields.hasErrors('passwordMatching')} ? 'invalid'">
             <p class="field-error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></p>
             <p class="field-error" th:if="${#fields.hasErrors('passwordMatching')}" th:errors="*{passwordMatching}"></p>
 
-            <label for="nickname">닉네임</label>
-            <input type="text" th:field="*{nickname}" placeholder="한글·영문·숫자·_ 2~12자"
+            <label for="nickname" th:text="#{signup.nickname}">닉네임</label>
+            <input type="text" th:field="*{nickname}" th:placeholder="#{signup.nickname.hint}"
                    th:classappend="${#fields.hasErrors('nickname')} ? 'invalid'">
             <p class="field-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></p>
 
-            <button type="submit" class="btn btn-primary">가입하기</button>
+            <button type="submit" class="btn btn-primary" th:text="#{signup.submit}">가입하기</button>
         </form>
 
-        <p class="auth-switch">이미 계정이 있으신가요? <a th:href="@{/login}">로그인</a></p>
+        <p class="auth-switch"><th:block th:text="#{signup.haveAccount}">이미 계정이 있으신가요?</th:block> <a th:href="@{/login}" th:text="#{login.submit}">로그인</a></p>
     </section>
 </main>
 </body>

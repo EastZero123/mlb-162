@@ -1,5 +1,6 @@
 package com.mlbgame.combine;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.Position;
@@ -88,11 +89,11 @@ public enum CombineTest {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("CombineTest." + name(), label);
     }
 
     public String getUnit() {
-        return unit;
+        return Messages.text("CombineTest." + name() + ".unit", unit);
     }
 
     public int getDecimals() {

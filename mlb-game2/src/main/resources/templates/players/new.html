@@ -1,30 +1,29 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('선수 생성')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{create.title})}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow">
-    <h1 class="page-title">선수 생성</h1>
-    <p class="muted">
-        모든 능력치는 기본값(고졸 <span th:text="${highSchoolStart}">25</span> / 대졸 <span th:text="${collegeStart}">35</span>)에서
-        시작하고, <strong th:text="${allocationPoints}">55</strong>포인트를 원하는 능력치에 자유롭게 배분해요. 랜덤은 없습니다.
+    <h1 class="page-title" th:text="#{create.title}">선수 생성</h1>
+    <p class="muted" th:utext="#{create.intro(${highSchoolStart}, ${collegeStart}, ${allocationPoints})}">
+        모든 능력치는 기본값(고졸 25 / 대졸 35)에서 시작하고, 55포인트를 원하는 능력치에 자유롭게 배분해요. 랜덤은 없습니다.
     </p>
     <div class="alert alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
     <form th:action="@{/players}" th:object="${form}" method="post" class="card form form-card" novalidate>
-        <label for="name">이름</label>
-        <input type="text" th:field="*{name}" placeholder="한글·영문 2~20자"
+        <label for="name" th:text="#{create.name}">이름</label>
+        <input type="text" th:field="*{name}" th:placeholder="#{create.name.hint}"
                th:classappend="${#fields.hasErrors('name')} ? 'invalid'">
         <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 
-        <label for="uniformNumber">등번호</label>
+        <label for="uniformNumber" th:text="#{create.number}">등번호</label>
         <input type="number" min="0" max="99" th:field="*{uniformNumber}"
                th:classappend="${#fields.hasErrors('uniformNumber')} ? 'invalid'">
         <p class="field-error" th:if="${#fields.hasErrors('uniformNumber')}" th:errors="*{uniformNumber}"></p>
 
-        <label for="position">포지션</label>
+        <label for="position" th:text="#{create.position}">포지션</label>
         <select th:field="*{position}" th:classappend="${#fields.hasErrors('position')} ? 'invalid'">
-            <option value="">선택</option>
+            <option value="" th:text="#{common.select}">선택</option>
             <option th:each="p : ${positions}" th:value="${p.name()}" th:attr="data-pitcher=${p.pitcher}"
                     th:text="${p.shortName + ' · ' + p.label}">SS · 유격수</option>
         </select>
@@ -32,19 +31,19 @@
 
         <div class="form-row">
             <div>
-                <label for="throwsHand">던지는 손</label>
+                <label for="throwsHand" th:text="#{create.throws}">던지는 손</label>
                 <select th:field="*{throwsHand}">
-                    <option value="">선택</option>
-                    <option th:each="h : ${throwHands}" th:value="${h.name()}" th:text="${h.label + '투'}">우투</option>
+                    <option value="" th:text="#{common.select}">선택</option>
+                    <option th:each="h : ${throwHands}" th:value="${h.name()}" th:text="#{create.throwsOption(${h.label})}">우투</option>
                 </select>
                 <p class="field-error" th:if="${#fields.hasErrors('throwsHand')}" th:errors="*{throwsHand}"></p>
                 <p class="field-error" th:if="${#fields.hasErrors('throwsHandValid')}" th:errors="*{throwsHandValid}"></p>
             </div>
             <div>
-                <label for="bats">타석</label>
+                <label for="bats" th:text="#{create.bats}">타석</label>
                 <select th:field="*{bats}">
-                    <option value="">선택</option>
-                    <option th:each="h : ${batHands}" th:value="${h.name()}" th:text="${h.label + '타'}">우타</option>
+                    <option value="" th:text="#{common.select}">선택</option>
+                    <option th:each="h : ${batHands}" th:value="${h.name()}" th:text="#{create.batsOption(${h.label})}">우타</option>
                 </select>
                 <p class="field-error" th:if="${#fields.hasErrors('bats')}" th:errors="*{bats}"></p>
             </div>
@@ -52,17 +51,17 @@
 
         <div class="form-row">
             <div>
-                <label for="nationality">국적</label>
+                <label for="nationality" th:text="#{create.nationality}">국적</label>
                 <select th:field="*{nationality}" th:classappend="${#fields.hasErrors('nationality')} ? 'invalid'">
-                    <option value="">선택</option>
+                    <option value="" th:text="#{common.select}">선택</option>
                     <option th:each="n : ${nationalities}" th:value="${n.name()}" th:text="${n.label}">미국</option>
                 </select>
                 <p class="field-error" th:if="${#fields.hasErrors('nationality')}" th:errors="*{nationality}"></p>
             </div>
             <div>
-                <label for="schoolRegion">출신 학교 지역</label>
+                <label for="schoolRegion" th:text="#{create.schoolRegion}">출신 학교 지역</label>
                 <select th:field="*{schoolRegion}" th:classappend="${#fields.hasErrors('schoolRegion')} ? 'invalid'">
-                    <option value="">선택</option>
+                    <option value="" th:text="#{common.select}">선택</option>
                     <option th:each="r : ${schoolRegions}" th:value="${r.name()}" th:text="${r.label}">미국 동부</option>
                 </select>
                 <p class="field-error" th:if="${#fields.hasErrors('schoolRegion')}" th:errors="*{schoolRegion}"></p>
@@ -70,32 +69,32 @@
         </div>
 
         <fieldset class="choice-group">
-            <legend>학력</legend>
+            <legend th:text="#{create.education}">학력</legend>
             <label class="choice" th:each="e : ${educations}">
                 <input type="radio" th:field="*{education}" th:value="${e.name()}">
                 <span>
-                    <strong th:text="${e.label + ' (' + e.startAge + '세)'}">고졸 (18세)</strong>
-                    <small th:text="${e.name() == 'HIGH_SCHOOL'} ? '능력치 30 시작 · 성장 기간이 김' : '능력치 40 시작 · 상위 리그에서 출발'"></small>
+                    <strong th:text="${e.label} + ' (' + #{common.age(${e.startAge})} + ')'">고졸 (18세)</strong>
+                    <small th:text="${e.name() == 'HIGH_SCHOOL'} ? #{create.education.highSchool} : #{create.education.college}"></small>
                 </span>
             </label>
             <p class="field-error" th:if="${#fields.hasErrors('education')}" th:errors="*{education}"></p>
         </fieldset>
 
         <fieldset class="choice-group" id="pitch-fields">
-            <legend>구종 (포심 + 3개 선택)</legend>
-            <p class="muted small">포심은 기본 구종입니다. 나머지 3개를 서로 다르게 골라 주세요.
+            <legend th:text="#{create.pitches}">구종 (포심 + 3개 선택)</legend>
+            <p class="muted small" th:text="#{create.pitches.help}">포심은 기본 구종입니다. 나머지 3개를 서로 다르게 골라 주세요.
                 구종은 선수의 스타일(하이라이트 연출)이고 능력치에는 영향을 주지 않아요.</p>
             <div class="form-row three">
                 <select th:field="*{pitch2}">
-                    <option value="">구종 2</option>
+                    <option value="" th:text="#{create.pitchN(2)}">구종 2</option>
                     <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">슬라이더</option>
                 </select>
                 <select th:field="*{pitch3}">
-                    <option value="">구종 3</option>
+                    <option value="" th:text="#{create.pitchN(3)}">구종 3</option>
                     <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">커브</option>
                 </select>
                 <select th:field="*{pitch4}">
-                    <option value="">구종 4</option>
+                    <option value="" th:text="#{create.pitchN(4)}">구종 4</option>
                     <option th:each="t : ${pitchTypes}" th:value="${t.name()}" th:text="${t.label}">체인지업</option>
                 </select>
             </div>
@@ -104,13 +103,13 @@
 
         <fieldset class="choice-group allocation" id="allocation"
                   th:attr="data-points=${allocationPoints},data-max=${allocationMax},data-hs-start=${highSchoolStart},data-college-start=${collegeStart}">
-            <legend>능력치 배분</legend>
+            <legend th:text="#{create.allocation}">능력치 배분</legend>
             <p class="allocation-status">
-                남은 포인트 <strong id="remaining" th:text="${allocationPoints}">55</strong>
+                <th:block th:text="#{create.remaining}">남은 포인트</th:block> <strong id="remaining" th:text="${allocationPoints}">55</strong>
                 / <span th:text="${allocationPoints}">55</span>
-                <small class="muted">· 능력치당 최대 +<span th:text="${allocationMax}">25</span> · OVR <strong id="ovr-preview">-</strong></small>
+                <small class="muted">· <th:block th:text="#{create.maxPerAttribute(${allocationMax})}">능력치당 최대 +25</th:block> · OVR <strong id="ovr-preview">-</strong></small>
             </p>
-            <p class="muted small" id="allocation-hint">포지션과 학력을 먼저 고르면 배분할 수 있어요.</p>
+            <p class="muted small" id="allocation-hint" th:text="#{create.allocation.hint}">포지션과 학력을 먼저 고르면 배분할 수 있어요.</p>
             <p class="field-error" th:if="${#fields.hasErrors('allocation*')}" th:errors="*{allocation*}"></p>
 
             <ul class="alloc-list" data-group="hitter">
@@ -120,10 +119,10 @@
                         <small class="attr-desc" th:text="${a.description}">설명</small>
                     </span>
                     <span class="stepper">
-                        <button type="button" class="step" data-step="-1" aria-label="감소">−</button>
+                        <button type="button" class="step" data-step="-1" th:attr="aria-label=#{create.decrease}">−</button>
                         <input type="number" min="0" th:max="${allocationMax}" class="alloc-input"
                                th:name="'allocation[' + ${a.name()} + ']'" th:value="${form.allocation.get(a) ?: 0}">
-                        <button type="button" class="step" data-step="1" aria-label="증가">+</button>
+                        <button type="button" class="step" data-step="1" th:attr="aria-label=#{create.increase}">+</button>
                     </span>
                     <span class="attr-value alloc-total">-</span>
                 </li>
@@ -135,18 +134,18 @@
                         <small class="attr-desc" th:text="${a.description}">설명</small>
                     </span>
                     <span class="stepper">
-                        <button type="button" class="step" data-step="-1" aria-label="감소">−</button>
+                        <button type="button" class="step" data-step="-1" th:attr="aria-label=#{create.decrease}">−</button>
                         <input type="number" min="0" th:max="${allocationMax}" class="alloc-input"
                                th:name="'allocation[' + ${a.name()} + ']'" th:value="${form.allocation.get(a) ?: 0}">
-                        <button type="button" class="step" data-step="1" aria-label="증가">+</button>
+                        <button type="button" class="step" data-step="1" th:attr="aria-label=#{create.increase}">+</button>
                     </span>
                     <span class="attr-value alloc-total">-</span>
                 </li>
             </ul>
-            <button type="button" class="btn btn-ghost small" id="alloc-even">고르게 배분 (각 +5)</button>
+            <button type="button" class="btn btn-ghost small" id="alloc-even" th:text="#{create.allocation.even}">고르게 배분 (각 +5)</button>
         </fieldset>
 
-        <button type="submit" class="btn btn-primary" id="submit-btn">선수 생성하고 컴바인으로</button>
+        <button type="submit" class="btn btn-primary" id="submit-btn" th:text="#{create.submit}">선수 생성하고 컴바인으로</button>
     </form>
 </main>
 <script>

@@ -15,32 +15,32 @@ import java.util.Objects;
 
 public class PlayerCreateForm {
 
-    @NotBlank(message = "선수 이름을 입력해 주세요.")
+    @NotBlank(message = "{create.name.required}")
     @Pattern(regexp = "^[가-힣a-zA-Z][가-힣a-zA-Z .'-]{0,18}[가-힣a-zA-Z.]$",
-            message = "이름은 한글·영문 2~20자입니다. (공백, 마침표, 하이픈 허용)")
+            message = "{create.name.pattern}")
     private String name;
 
-    @NotNull(message = "등번호를 입력해 주세요.")
-    @Min(value = 0, message = "등번호는 0~99입니다.")
-    @Max(value = 99, message = "등번호는 0~99입니다.")
+    @NotNull(message = "{create.number.required}")
+    @Min(value = 0, message = "{create.number.range}")
+    @Max(value = 99, message = "{create.number.range}")
     private Integer uniformNumber;
 
-    @NotNull(message = "포지션을 선택해 주세요.")
+    @NotNull(message = "{create.position.required}")
     private Position position;
 
-    @NotNull(message = "타석 방향을 선택해 주세요.")
+    @NotNull(message = "{create.bats.required}")
     private Hand bats;
 
-    @NotNull(message = "던지는 손을 선택해 주세요.")
+    @NotNull(message = "{create.throws.required}")
     private Hand throwsHand;
 
-    @NotNull(message = "국적을 선택해 주세요.")
+    @NotNull(message = "{create.nationality.required}")
     private Nationality nationality;
 
-    @NotNull(message = "학력을 선택해 주세요.")
+    @NotNull(message = "{create.education.required}")
     private Education education;
 
-    @NotNull(message = "출신 학교 지역을 선택해 주세요.")
+    @NotNull(message = "{create.schoolRegion.required}")
     private SchoolRegion schoolRegion;
 
     // 능력치 자유 배분 (요청 파라미터 allocation[CONTACT]=10 형식, 빈 값은 0)
@@ -51,17 +51,17 @@ public class PlayerCreateForm {
     private PitchType pitch3;
     private PitchType pitch4;
 
-    @AssertTrue(message = "선택할 수 없는 포지션입니다.")
+    @AssertTrue(message = "{create.position.invalid}")
     public boolean isPositionSelectable() {
         return position == null || position.isUserSelectable();
     }
 
-    @AssertTrue(message = "던지는 손은 우투 또는 좌투만 선택할 수 있습니다.")
+    @AssertTrue(message = "{create.throws.invalid}")
     public boolean isThrowsHandValid() {
         return throwsHand != Hand.S;
     }
 
-    @AssertTrue(message = "투수는 포심 외 구종 3개를 서로 다르게 선택해 주세요.")
+    @AssertTrue(message = "{create.pitches.invalid}")
     public boolean isPitchSelectionValid() {
         if (position == null || !position.isPitcher()) {
             return true;

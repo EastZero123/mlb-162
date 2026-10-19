@@ -1,5 +1,7 @@
 package com.mlbgame.contract;
 
+import com.mlbgame.common.Messages;
+
 public enum ContractType {
     /** 메이저 계약 없음 (마이너 레벨 연봉) */
     NONE("마이너 계약", false),
@@ -22,7 +24,7 @@ public enum ContractType {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("ContractType." + name(), label);
     }
 
     public boolean isGuaranteed() {

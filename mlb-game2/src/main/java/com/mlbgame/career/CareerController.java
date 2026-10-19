@@ -1,6 +1,7 @@
 package com.mlbgame.career;
 
 import com.mlbgame.auth.AuthUser;
+import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
 import com.mlbgame.player.Player;
@@ -42,13 +43,13 @@ public class CareerController {
     @PostMapping("/players/{playerId}/retire")
     public String retire(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long playerId,
                          @RequestParam(defaultValue = "") String confirm, RedirectAttributes ra) {
-        if (!"은퇴".equals(confirm.trim())) {
-            ra.addFlashAttribute("errorMessage", "은퇴하려면 확인란에 '은퇴'를 입력해 주세요.");
+        if (!"은퇴".equals(confirm.trim()) && !"retire".equalsIgnoreCase(confirm.trim())) {   // 영어 화면은 retire
+            ra.addFlashAttribute("errorMessage", Messages.get("career.retire.confirmError"));
             return "redirect:/players/" + playerId + "/career";
         }
         try {
             Player player = careerService.retire(authUser.getId(), playerId);
-            ra.addFlashAttribute("headlines", List.of(player.getName() + " 선수가 은퇴했습니다. 기록은 커리어 화면에 영구 보관됩니다."));
+            ra.addFlashAttribute("headlines", List.of(Messages.get("career.retire.done", player.getName())));
         } catch (SeasonProgressException e) {
             ra.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/players/" + playerId + "/career";

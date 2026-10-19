@@ -3,6 +3,7 @@ package com.mlbgame.contract;
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardRepository;
 import com.mlbgame.common.Dice;
+import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractOffer.Kind;
 import com.mlbgame.contract.ContractOffer.Status;
 import com.mlbgame.league.LeagueLevel;
@@ -142,22 +143,22 @@ public class ContractService {
 
         if (player.getContractYears() > 1) {
             player.passContractYear();
-            lines.add("계약: " + player.getContractType().getLabel() + " " + player.getContractYears() + "년 남음 ("
-                    + money(player.getSalary()) + "/년)");
+            lines.add(Messages.get("contract.news.remaining", player.getContractType().getLabel(), player.getContractYears(),
+                    money(player.getSalary())));
             return lines;
         }
 
         if (service < Payroll.ARBITRATION_START) {
             player.signContract(null, Payroll.MINIMUM_SALARY, 1, ContractType.PRE_ARB);
-            lines.add("계약: 서비스 " + service + "년 — 최저 연봉 " + money(Payroll.MINIMUM_SALARY) + "으로 재계약");
+            lines.add(Messages.get("contract.news.preArb", service, money(Payroll.MINIMUM_SALARY)));
         } else if (service < Payroll.FREE_AGENCY_SERVICE) {
             long fair = ContractRules.fairArbitration(service, value);
             long offer = ContractRules.arbitrationOffer(fair);
             offerRepository.save(new ContractOffer(player.getId(), newYear, Kind.ARBITRATION, player.getTeam(), 1, offer, fair));
-            lines.add("계약: 연봉조정 대상 (서비스 " + service + "년) — 구단 제시 " + money(offer) + ". 계약 화면에서 협상하세요");
+            lines.add(Messages.get("contract.news.arbitration", service, money(offer)));
         } else {
             int count = createFreeAgentOffers(player, world, newYear, value);
-            lines.add("계약: FA 자격 취득! " + count + "개 구단이 오퍼를 보냈습니다. 계약 화면에서 협상하세요");
+            lines.add(Messages.get("contract.news.freeAgency", count));
         }
 
         if (service >= 2 && service < Payroll.FREE_AGENCY_SERVICE && value >= ContractRules.EXTENSION_MIN_OVR
@@ -166,7 +167,7 @@ public class ContractService {
             long salary = ContractRules.extensionSalary(value);
             offerRepository.save(new ContractOffer(player.getId(), newYear, Kind.EXTENSION, player.getTeam(), years,
                     salary, salary));
-            lines.add("계약: " + player.getTeam().getNameKo() + "가 " + years + "년 " + money(salary) + "/년 연장 계약을 제안했습니다");
+            lines.add(Messages.get("contract.news.extension", player.getTeam().getDisplayName(), years, money(salary)));
         }
         return lines;
     }
@@ -252,9 +253,9 @@ public class ContractService {
     public ContractOffer accept(Long userId, Long playerId, Long offerId, boolean noTradeClause) {
         Player player = playerService.getOwned(userId, playerId);
         ContractOffer offer = pendingOffer(playerId, offerId);
-        sign(player, offer, offer.getSalary(), "수락", noTradeClause);
+        sign(player, offer, offer.getSalary(), Messages.get("contract.note.accepted"), noTradeClause);
         reputationService.change(player, offer.getSeasonYear(), ReputationRules.ACCEPTED_AS_OFFERED,
-                offer.getKind().getLabel() + " 제시 조건 수락");
+                Messages.get("reputation.reason.acceptedAsOffered", offer.getKind().getLabel()));
         return offer;
     }
 
@@ -270,17 +271,17 @@ public class ContractService {
         Player player = playerService.getOwned(userId, playerId);
         ContractOffer offer = pendingOffer(playerId, offerId);
         if (offer.getKind() != Kind.ARBITRATION) {
-            throw new InvalidTrainingException("연봉조정 제안에서만 청문회를 신청할 수 있습니다.");
+            throw new InvalidTrainingException(Messages.get("contract.error.hearingOnlyArbitration"));
         }
         if (ask < offer.getSalary()) {
-            throw new InvalidTrainingException("요구액은 구단 제시액 이상이어야 합니다.");
+            throw new InvalidTrainingException(Messages.get("contract.error.askBelowOffer"));
         }
         long result = ContractRules.hearing(ask, offer.getSalary(), offer.getFairValue());
         boolean won = result == ask && ask > offer.getSalary();
-        sign(player, offer, result, won ? "청문회 승리 — 요구액 " + money(ask) + " 채택" : "청문회 패배 — 구단 제시액 채택",
+        sign(player, offer, result, won ? Messages.get("contract.note.hearingWon", money(ask)) : Messages.get("contract.note.hearingLost"),
                 noTradeClause);
         if (won) {
-            reputationService.change(player, offer.getSeasonYear(), ReputationRules.ARBITRATION_WON, "연봉조정 청문회 승리");
+            reputationService.change(player, offer.getSeasonYear(), ReputationRules.ARBITRATION_WON, Messages.get("reputation.reason.hearingWon"));
         }
         return offer;
     }
@@ -297,16 +298,16 @@ public class ContractService {
         Player player = playerService.getOwned(userId, playerId);
         ContractOffer offer = pendingOffer(playerId, offerId);
         if (offer.getKind() != Kind.FREE_AGENCY) {
-            throw new InvalidTrainingException("FA 오퍼에서만 역제안할 수 있습니다.");
+            throw new InvalidTrainingException(Messages.get("contract.error.counterOnlyFa"));
         }
         if (dice.nextDouble() < ContractRules.counterAcceptance(ask, offer.getSalary(), player.getReputation())) {
-            sign(player, offer, Math.max(ask, offer.getSalary()), "역제안 수락 — " + money(Math.max(ask, offer.getSalary())),
+            sign(player, offer, Math.max(ask, offer.getSalary()), Messages.get("contract.note.counterAccepted", money(Math.max(ask, offer.getSalary()))),
                     noTradeClause);
         } else {
             int lost = reputationService.change(player, offer.getSeasonYear(), ReputationRules.COUNTER_REJECTED,
-                    "FA 역제안 결렬 (" + offer.getTeam().getNameKo() + ")");
-            offer.reject("역제안 거절 — " + offer.getTeam().getNameKo() + "가 협상에서 철수했습니다"
-                    + (lost != 0 ? " (평판 " + lost + ")" : ""));
+                    Messages.get("reputation.reason.counterRejected", offer.getTeam().getDisplayName()));
+            offer.reject(Messages.get("contract.note.counterRejected", offer.getTeam().getDisplayName())
+                    + (lost != 0 ? Messages.get("reputation.lost", lost) : ""));
             ensureFreeAgentFallback(player, offer);
         }
         return offer;
@@ -318,11 +319,11 @@ public class ContractService {
         Player player = playerService.getOwned(userId, playerId);
         ContractOffer offer = pendingOffer(playerId, offerId);
         if (offer.getKind() == Kind.ARBITRATION) {
-            throw new InvalidTrainingException("연봉조정은 수락하거나 청문회로 결정해야 합니다.");
+            throw new InvalidTrainingException(Messages.get("contract.error.arbitrationNoDecline"));
         }
-        offer.reject("거절");
+        offer.reject(Messages.get("contract.note.declined"));
         if (offer.getKind() == Kind.EXTENSION) {
-            reputationService.change(player, offer.getSeasonYear(), ReputationRules.EXTENSION_DECLINED, "연장 제안 거절");
+            reputationService.change(player, offer.getSeasonYear(), ReputationRules.EXTENSION_DECLINED, Messages.get("reputation.reason.extensionDeclined"));
         }
         if (offer.getKind() == Kind.FREE_AGENCY) {
             ensureFreeAgentFallback(player, offer);
@@ -354,11 +355,11 @@ public class ContractService {
         };
         boolean moving = !offer.getTeam().getId().equals(player.getTeam().getId());
         player.signContract(offer.getTeam(), salary, offer.getYears(), type, noTradeClause);
-        offer.accept(salary, noTradeClause ? note + " · 트레이드 거부 조항" : note, noTradeClause);
+        offer.accept(salary, noTradeClause ? note + Messages.get("contract.note.withNtc") : note, noTradeClause);
         // 같은 오프시즌의 다른 제안은 정리 (연장 수락 → 연봉조정 소멸, FA 계약 → 다른 FA 오퍼 소멸)
         for (ContractOffer other : pending(player.getId())) {
             if (other != offer) {
-                other.reject("다른 계약 체결로 소멸");
+                other.reject(Messages.get("contract.note.superseded"));
             }
         }
         if (moving) {
@@ -370,9 +371,9 @@ public class ContractService {
     private ContractOffer pendingOffer(Long playerId, Long offerId) {
         ContractOffer offer = offerRepository.findById(offerId)
                 .filter(o -> o.getPlayerId().equals(playerId))
-                .orElseThrow(() -> new SeasonProgressException("계약 제안을 찾을 수 없습니다."));
+                .orElseThrow(() -> new SeasonProgressException(Messages.get("contract.error.notFound")));
         if (!offer.isPending()) {
-            throw new SeasonProgressException("이미 결정된 제안입니다.");
+            throw new SeasonProgressException(Messages.get("contract.error.alreadyDecided"));
         }
         return offer;
     }

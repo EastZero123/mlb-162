@@ -1,5 +1,6 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +58,13 @@ public class PlayerService {
             int points = entry.getValue();
             if (points < 0 || points > max) {
                 throw new InvalidAllocationException(
-                        entry.getKey().getLabel() + "에는 0~" + max + "포인트까지 배분할 수 있습니다.");
+                        Messages.get("create.error.allocationMax", entry.getKey().getLabel(), max));
             }
         }
         int total = allocation.values().stream().mapToInt(Integer::intValue).sum();
         if (total != balance.allocationPoints()) {
             throw new InvalidAllocationException(
-                    "배분 포인트 " + balance.allocationPoints() + "을 모두 사용해 주세요. (현재 " + total + ")");
+                    Messages.get("create.error.allocationTotal", balance.allocationPoints(), total));
         }
     }
 

@@ -1,5 +1,7 @@
 package com.mlbgame.player;
 
+import com.mlbgame.common.Messages;
+
 public enum Hand {
     R("우"),
     L("좌"),
@@ -12,6 +14,6 @@ public enum Hand {
     }
 
     public String getLabel() {
-        return label;
+        return Messages.text("Hand." + name(), label);
     }
 }

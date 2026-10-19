@@ -1,6 +1,7 @@
 package com.mlbgame.contract;
 
 import com.mlbgame.auth.AuthUser;
+import com.mlbgame.common.Messages;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
 import com.mlbgame.reputation.ReputationRules;
@@ -86,14 +87,14 @@ public class ContractController {
         try {
             ContractOffer offer = action.get();
             String message = offer.getStatus() == ContractOffer.Status.ACCEPTED
-                    ? "계약 체결: " + offer.getTeam().getNameKo() + " " + offer.getYears() + "년 "
-                    + ContractService.money(offer.getSalary()) + "/년" + (offer.getNote() != null ? " (" + offer.getNote() + ")" : "")
+                    ? Messages.get("contract.signed", offer.getTeam().getDisplayName(), offer.getYears(),
+                    ContractService.money(offer.getSalary())) + (offer.getNote() != null ? " (" + offer.getNote() + ")" : "")
                     : offer.getNote();
             ra.addFlashAttribute("resultMessage", message);
         } catch (SeasonProgressException | InvalidTrainingException e) {
             ra.addFlashAttribute("errorMessage", e.getMessage());
         } catch (ObjectOptimisticLockingFailureException e) {
-            ra.addFlashAttribute("errorMessage", "이미 처리된 요청입니다.");
+            ra.addFlashAttribute("errorMessage", Messages.get("error.alreadyHandled"));
         }
         return "redirect:/players/" + playerId + "/contract";
     }

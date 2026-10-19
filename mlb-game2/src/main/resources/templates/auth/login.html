@@ -1,29 +1,30 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('로그인')}"></head>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(#{login.title})}"></head>
 <body>
 <main class="auth-wrap">
     <section class="card auth-card">
-        <h1 class="auth-title">⚾ MLB 선수 키우기</h1>
-        <p class="auth-sub">나만의 선수를 드래프트부터 명예의 전당까지</p>
+        <p class="auth-lang"><a th:replace="~{fragments/layout :: langSwitch}"></a></p>
+        <h1 class="auth-title" th:text="'⚾ ' + #{app.name}">⚾ MLB 선수 키우기</h1>
+        <p class="auth-sub" th:text="#{login.tagline}">나만의 선수를 드래프트부터 명예의 전당까지</p>
 
-        <div class="alert alert-success" th:if="${signupSuccess}">회원가입이 완료되었습니다. 로그인해 주세요.</div>
-        <div class="alert alert-error" th:if="${param.error}">아이디 또는 비밀번호가 올바르지 않습니다.</div>
-        <div class="alert alert-info" th:if="${param.logout}">로그아웃되었습니다.</div>
+        <div class="alert alert-success" th:if="${signupSuccess}" th:text="#{login.signupSuccess}">회원가입이 완료되었습니다. 로그인해 주세요.</div>
+        <div class="alert alert-error" th:if="${param.error}" th:text="#{login.error}">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+        <div class="alert alert-info" th:if="${param.logout}" th:text="#{login.loggedOut}">로그아웃되었습니다.</div>
 
         <form th:action="@{/login}" method="post" class="form">
-            <label for="loginId">아이디</label>
+            <label for="loginId" th:text="#{auth.loginId}">아이디</label>
             <input type="text" id="loginId" name="loginId" autocomplete="username" required autofocus>
 
-            <label for="password">비밀번호</label>
+            <label for="password" th:text="#{auth.password}">비밀번호</label>
             <input type="password" id="password" name="password" autocomplete="current-password" required>
 
-            <button type="submit" class="btn btn-primary">로그인</button>
+            <button type="submit" class="btn btn-primary" th:text="#{login.submit}">로그인</button>
         </form>
 
-        <p class="auth-switch">계정이 없으신가요? <a th:href="@{/signup}">회원가입</a></p>
+        <p class="auth-switch"><th:block th:text="#{login.noAccount}">계정이 없으신가요?</th:block> <a th:href="@{/signup}" th:text="#{signup.title}">회원가입</a></p>
         <p class="auth-switch auth-public">
-            로그인 없이 보기 · <a th:href="@{/rankings}">랭킹</a> · <a th:href="@{/patch-notes}">패치노트</a>
+            <th:block th:text="#{login.browse}">로그인 없이 보기</th:block> · <a th:href="@{/rankings}" th:text="#{nav.rankings}">랭킹</a> · <a th:href="@{/patch-notes}" th:text="#{nav.patchNotes}">패치노트</a>
         </p>
     </section>
 </main>
