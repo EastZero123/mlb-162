@@ -3,6 +3,8 @@ package com.mlbgame.reputation;
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardRepository;
 import com.mlbgame.common.Messages;
+import com.mlbgame.league.mode.LeagueRulesets;
+import com.mlbgame.league.mode.LeagueTerms;
 import com.mlbgame.player.Player;
 import com.mlbgame.season.PlayerSeason;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class ReputationService {
     @Transactional
     public List<String> seasonReview(Player player, PlayerSeason season, boolean champion) {
         int year = season.getSeasonYear();
+        LeagueTerms terms = LeagueRulesets.of(player).terms();
         int awardPoints = awardRepository.findByPlayerIdAndSeasonYearOrderByIdAsc(player.getId(), year).stream()
                 .mapToInt(Award::getPoints).sum();
         List<String> parts = new ArrayList<>();
@@ -64,16 +67,17 @@ public class ReputationService {
             total += award;
         }
         if (champion) {
-            int ring = change(player, year, ReputationRules.CHAMPIONSHIP, Messages.get("reputation.reason.championship", year));
+            int ring = change(player, year, ReputationRules.CHAMPIONSHIP, Messages.get("reputation.reason.championship", year, terms.finals()));
             if (ring != 0) {
                 parts.add(Messages.get("reputation.part.championship", ring));
                 total += ring;
             }
         }
         if (season.getMlbSeriesPlayed() >= MAJOR_SEASON_SERIES) {
-            int major = change(player, year, ReputationRules.MAJOR_SEASON, Messages.get("reputation.reason.majorSeason", year));
+            int major = change(player, year, ReputationRules.MAJOR_SEASON,
+                    Messages.get("reputation.reason.majorSeason", year, terms.topShort()));
             if (major != 0) {
-                parts.add(Messages.get("reputation.part.majorSeason", major));
+                parts.add(Messages.get("reputation.part.majorSeason", major, terms.topShort()));
                 total += major;
             }
         }

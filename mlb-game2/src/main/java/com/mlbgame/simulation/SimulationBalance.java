@@ -1,6 +1,8 @@
 package com.mlbgame.simulation;
 
+import com.mlbgame.league.LeagueMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
  * 시뮬레이션 보정 수치. application.yml 의 game.simulation.* 로 조정한다.
@@ -9,16 +11,34 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <pre>logit(p) = logit(기준 확률) + 계수 × (능력치 − 기준 능력치) / 10</pre>
  * 기준 능력치(메이저리그 평균 65)끼리 만나면 실제 MLB 리그 평균 기록이 나온다.
  *
- * @param baselineRating 리그 평균 기록에 대응하는 능력치 (메이저리그 평균 OVR)
+ * <p>능력치 계수는 모든 모드 공통이고, 리그 평균 기록(baseline)만 모드별로 다르다 — 각 모드 1군 평균(OVR 65)끼리
+ * 만나면 그 리그 평균 기록이 나온다 (docs/kbo-mode.md 3.7).
+ *
+ * @param baselineRating 리그 평균 기록에 대응하는 능력치 (최상위 레벨 평균 OVR)
  * @param baseline       메이저리그 평균 타석 결과 비율
  * @param coefficients   능력치 10 차이당 로그 오즈 변화량
+ * @param kboBaseline    KBO 리그 평균 타석 결과 비율 (없으면 MLB 기준)
  */
 @ConfigurationProperties("game.simulation")
 public record SimulationBalance(
         int baselineRating,
         Baseline baseline,
-        Coefficients coefficients
+        Coefficients coefficients,
+        Baseline kboBaseline
 ) {
+
+    @ConstructorBinding
+    public SimulationBalance {
+    }
+
+    public SimulationBalance(int baselineRating, Baseline baseline, Coefficients coefficients) {
+        this(baselineRating, baseline, coefficients, null);
+    }
+
+    /** 모드의 리그 평균 기록 */
+    public Baseline baseline(LeagueMode mode) {
+        return mode == LeagueMode.KBO && kboBaseline != null ? kboBaseline : baseline;
+    }
 
     /**
      * 메이저리그 평균 (2023~2024 시즌 리그 평균 근사, 타석 기준)

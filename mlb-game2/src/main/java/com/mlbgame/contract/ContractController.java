@@ -88,7 +88,8 @@ public class ContractController {
             ContractOffer offer = action.get();
             String message = offer.getStatus() == ContractOffer.Status.ACCEPTED
                     ? Messages.get("contract.signed", offer.getTeam().getDisplayName(), offer.getYears(),
-                    ContractService.money(offer.getSalary())) + (offer.getNote() != null ? " (" + offer.getNote() + ")" : "")
+                    ContractService.money(offer.getTeam().getLeagueMode(), offer.getSalary()))
+                    + (offer.getNote() != null ? " (" + offer.getNote() + ")" : "")
                     : offer.getNote();
             ra.addFlashAttribute("resultMessage", message);
         } catch (SeasonProgressException | InvalidTrainingException e) {

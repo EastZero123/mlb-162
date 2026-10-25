@@ -10,15 +10,16 @@
             1라운드 5번 (전체 5순위)
         </p>
         <p class="draft-team" th:style="'color:' + ${draft.team.primaryColor}" th:text="${draft.team.displayName}">팀</p>
-        <p class="muted" th:text="${#locale.language == 'en'} ? ${draft.team.league + ' ' + draft.team.division}
-                                  : ${draft.team.name + ' · ' + draft.team.league + ' ' + draft.team.division}">팀 영문</p>
+        <p class="muted" th:text="${#locale.language == 'en'}
+                                  ? ${draft.team.league + (draft.team.division == '-' ? '' : ' ' + draft.team.division)}
+                                  : ${draft.team.name + ' · ' + draft.team.league + (draft.team.division == '-' ? '' : ' ' + draft.team.division)}">팀 영문</p>
         <p class="draft-line" th:utext="#{draft.line(${#strings.escapeXml(player.name)}, ${player.position.label})}">
             <strong>선수</strong>, 유격수로 지명!
         </p>
         <dl class="draft-facts">
             <div>
                 <dt th:text="#{draft.signingBonus}">계약금</dt>
-                <dd th:text="'$' + ${#numbers.formatInteger(draft.signingBonus, 1, 'COMMA')}">$1,000,000</dd>
+                <dd th:text="${@fmt.money(draft.signingBonus, player.leagueMode)}">$1,000,000</dd>
             </div>
             <div>
                 <dt th:text="#{draft.startTeam}">시작 팀</dt>

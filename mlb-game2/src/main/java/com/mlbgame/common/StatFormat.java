@@ -1,9 +1,10 @@
 package com.mlbgame.common;
 
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.Team;
+import com.mlbgame.league.mode.LeagueRulesets;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.time.Month;
 import java.time.format.TextStyle;
 import java.util.List;
@@ -55,9 +56,14 @@ public class StatFormat {
         return value == null ? "-" : two(value);
     }
 
-    /** $1,234,567 */
+    /** 모드 통화로 표시 (MLB $1,234,567) — 템플릿에서 {@code ${@fmt.money(amount, player.leagueMode)}} */
+    public String money(long value, LeagueMode mode) {
+        return LeagueRulesets.of(mode).payroll().format(value);
+    }
+
+    /** $1,234,567 (MLB) */
     public String money(long value) {
-        return "$" + NumberFormat.getIntegerInstance(Locale.US).format(value);
+        return money(value, LeagueMode.MLB);
     }
 
     /** 레벨에 맞는 팀 표시명 — 마이너리그는 "디트로이트 타이거스 AA" */

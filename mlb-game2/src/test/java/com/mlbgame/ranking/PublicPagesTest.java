@@ -112,6 +112,19 @@ class PublicPagesTest {
     }
 
     @Test
+    void 패치노트는_MLB_KBO_통합이고_모드별로_걸러_볼_수_있다() throws Exception {
+        mockMvc.perform(get("/patch-notes"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("v1.0.0")))
+                .andExpect(content().string(Matchers.containsString("data-patch-filter=\"kbo\"")))
+                .andExpect(content().string(Matchers.containsString("<span class=\"mode-tag kbo\">KBO</span>")));
+        mockMvc.perform(get("/patch-notes").cookie(new jakarta.servlet.http.Cookie("lang", "en")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("v1.0.0")))
+                .andExpect(content().string(Matchers.containsString("KBO mode launch")));
+    }
+
+    @Test
     void 로그인_화면에_랭킹과_패치노트_링크가_있다() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())

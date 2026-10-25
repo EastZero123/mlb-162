@@ -18,22 +18,18 @@
             </div>
             <div class="ovr big">OVR <strong th:text="${@fmt.one(p.overall)}">70.0</strong></div>
         </div>
-        <div class="award-banner" th:if="${summary.hallOfFameLabel != null}">
-            <span class="award-icon">🏛️</span>
-            <strong th:text="${summary.hallOfFameLabel}">명예의 전당</strong>
-        </div>
         <div class="award-banner champion-banner" th:if="${summary.championships > 0}">
             <span class="award-icon">🏆</span>
-            <strong th:text="#{career.championships(${summary.championships})}">월드시리즈 우승 2회</strong>
+            <strong th:text="#{career.championships(${summary.championships}, ${terms.finals})}">월드시리즈 우승 2회</strong>
             <span class="muted small"
                   th:text="'(' + ${#strings.listJoin(summary.championshipYears(), ', ')} + ')'">(2028, 2031)</span>
         </div>
         <dl class="draft-facts">
             <div><dt th:text="#{career.hofScore}">명예의 전당 점수</dt><dd th:text="${summary.hallOfFameScore()}">0</dd></div>
-            <div><dt th:text="#{career.majorSeasons}">메이저 주요 시즌</dt><dd th:text="#{career.seasonCount(${summary.majorSeasons()})}">0</dd></div>
-            <div><dt th:text="#{career.mlbWar}">메이저 통산 WAR</dt><dd th:text="${@fmt.war(summary.careerWar)}">0.0</dd></div>
+            <div><dt th:text="#{career.majorSeasons(${terms.topShort})}">메이저 주요 시즌</dt><dd th:text="#{career.seasonCount(${summary.majorSeasons()})}">0</dd></div>
+            <div><dt th:text="#{career.mlbWar(${terms.topShort})}">메이저 통산 WAR</dt><dd th:text="${@fmt.war(summary.careerWar)}">0.0</dd></div>
             <div><dt th:text="#{career.awardPoints}">수상 포인트</dt><dd th:text="${summary.awardPoints()}">0</dd></div>
-            <div><dt th:text="#{stats.careerEarnings}">커리어 수령액</dt><dd th:text="${@fmt.money(summary.careerEarnings())}">$0</dd></div>
+            <div><dt th:text="#{stats.careerEarnings}">커리어 수령액</dt><dd th:text="${@fmt.money(summary.careerEarnings(), p.leagueMode)}">$0</dd></div>
         </dl>
     </section>
 
@@ -55,7 +51,7 @@
 
     <!-- 메이저 통산 -->
     <section class="card section">
-        <h2 class="section-title" th:text="#{career.mlbTotals}">메이저리그 통산</h2>
+        <h2 class="section-title" th:text="#{career.mlbTotals(${terms.top})}">메이저리그 통산</h2>
         <p th:unless="${p.pitcher}" th:with="b=${summary.mlbBatting()}"
            th:text="#{career.mlbBatting(${b.games}, ${b.summary()}, ${@fmt.rate(b.average)}, ${@fmt.rate(b.ops)})}">통산</p>
         <p th:if="${p.pitcher}" th:with="t=${summary.mlbPitching()}"
@@ -68,16 +64,16 @@
         <p class="muted small" th:if="${rec.empty}" th:text="#{common.noRecords}">아직 출전 기록이 없습니다.</p>
 
         <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.mlb()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.mlb()}, true)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(rec.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: pitching(${rec.minors()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: batting(${rec.minors()}, true)}"></div></th:block>
         </th:block>
-        <p class="muted small" th:unless="${#lists.isEmpty(rec.mlb())}" th:text="#{career.totalNote}">
+        <p class="muted small" th:unless="${#lists.isEmpty(rec.mlb())}" th:text="#{career.totalNote(${terms.topShort}, ${terms.finals})}">
             합계 행은 메이저에서 한 해에 두 팀 이상 뛰었을 때만 표시돼요. 🏆 는 그 팀으로 시즌을 마치고 월드시리즈 우승.
         </p>
     </section>
@@ -86,12 +82,12 @@
     <section class="card section" th:unless="${summary.records().empty}" th:with="det=${summary.detail()}">
         <h2 class="section-title" th:text="#{records.detail}">세부 지표</h2>
         <th:block th:unless="${#lists.isEmpty(det.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.mlb()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.mlb()}, true)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(det.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <th:block th:if="${p.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${det.minors()}, true)}"></div></th:block>
             <th:block th:unless="${p.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${det.minors()}, true)}"></div></th:block>
         </th:block>
@@ -102,11 +98,11 @@
     <section class="card section" th:unless="${p.pitcher or summary.records().empty}" th:with="rec=${summary.records()}">
         <h2 class="section-title" th:text="#{career.fielding}">수비 기록</h2>
         <th:block th:unless="${#lists.isEmpty(rec.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <div th:replace="~{fragments/records :: fielding(${rec.mlb()}, true, ${p.position.name() == 'C'})}"></div>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(rec.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <div th:replace="~{fragments/records :: fielding(${rec.minors()}, true, ${p.position.name() == 'C'})}"></div>
         </th:block>
     </section>

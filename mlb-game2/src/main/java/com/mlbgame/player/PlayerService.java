@@ -2,6 +2,8 @@ package com.mlbgame.player;
 
 import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
+import com.mlbgame.league.LeagueMode;
+import com.mlbgame.league.mode.LeagueRulesets;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
@@ -28,22 +30,48 @@ public class PlayerService {
         return playerRepository.findByUserIdAndStatusOrderByIdAsc(userId, PlayerStatus.RETIRED);
     }
 
+    /** 한 모드의 현역 선수 (대시보드) */
+    @Transactional(readOnly = true)
+    public List<Player> listActive(Long userId, LeagueMode mode) {
+        return playerRepository.findByUserIdAndStatusAndLeagueModeOrderByIdAsc(userId, PlayerStatus.ACTIVE, mode);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Player> listRetired(Long userId, LeagueMode mode) {
+        return playerRepository.findByUserIdAndStatusAndLeagueModeOrderByIdAsc(userId, PlayerStatus.RETIRED, mode);
+    }
+
     @Transactional(readOnly = true)
     public boolean hasFreeSlot(Long userId) {
-        return playerRepository.countByUserIdAndStatus(userId, PlayerStatus.ACTIVE) < balance.maxActivePlayers();
+        return hasFreeSlot(userId, LeagueMode.MLB);
+    }
+
+    /** 슬롯은 모드별로 따로 센다 (MLB 3 + KBO 3) */
+    @Transactional(readOnly = true)
+    public boolean hasFreeSlot(Long userId, LeagueMode mode) {
+        return playerRepository.countByUserIdAndStatusAndLeagueMode(userId, PlayerStatus.ACTIVE, mode)
+                < balance.maxActivePlayers();
     }
 
     @Transactional
     public Player create(Long userId, PlayerCreateForm form) {
-        if (!hasFreeSlot(userId)) {
-            throw new SlotLimitExceededException(balance.maxActivePlayers());
+        return create(userId, form, LeagueMode.MLB);
+    }
+
+    @Transactional
+    public Player create(Long userId, PlayerCreateForm form, LeagueMode mode) {
+        if (!LeagueRulesets.isAvailable(mode)) {
+            throw new IllegalArgumentException(Messages.get("mode.notReady", mode.getLabel()));   // 컨트롤러가 먼저 막는다
+        }
+        if (!hasFreeSlot(userId, mode)) {
+            throw new SlotLimitExceededException(balance.maxActivePlayers(), mode);
         }
         Map<Attribute, Integer> allocation = form.allocationFor(form.getPosition());
         validateAllocation(allocation);
 
         Player player = Player.create(userId, form.getName().trim(), form.getUniformNumber(), form.getPosition(),
                 form.getBats(), form.getThrowsHand(), form.getNationality(), form.getEducation(),
-                form.getSchoolRegion(), startValue(form.getEducation()), allocation, form.pitchSelection());
+                form.getSchoolRegion(), startValue(form.getEducation()), allocation, form.pitchSelection(), mode);
         return playerRepository.save(player);
     }
 

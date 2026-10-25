@@ -14,7 +14,7 @@
             <strong>팀</strong>은(는) 포스트시즌 진출에 실패했습니다. 다른 팀들의 결과만 확인할 수 있어요.
         </p>
         <p th:if="${postseason.userTeamQualified and !postseason.userPlays}"
-           th:utext="#{postseason.qualifiedNotPlaying(${#strings.escapeXml(player.team.displayName)})}">
+           th:utext="#{postseason.qualifiedNotPlaying(${#strings.escapeXml(player.team.displayName)}, ${terms.top})}">
             <strong>팀</strong>이(가) 진출했지만, 내 선수는 메이저 로스터가 아니거나 부상이라 출전하지 않습니다.
         </p>
         <p th:if="${postseason.userPlays}"
@@ -24,13 +24,13 @@
         <div class="award-banner" th:if="${postseason.done and postseason.championTeamId != null}"
              th:classappend="${postseason.championTeamId == myTeam} ? 'celebrate'">
             <span class="award-icon">🏆</span>
-            <strong th:text="#{postseason.champion(${teams[postseason.championTeamId].displayName})}">우승</strong>
+            <strong th:text="#{postseason.champion(${teams[postseason.championTeamId].displayName}, ${terms.finals})}">우승</strong>
             <span th:if="${postseason.championTeamId == myTeam}" th:text="#{postseason.myTeamWon}">내 팀이 정상에 올랐습니다!</span>
         </div>
         <div class="award-banner celebrate" th:each="aw : ${awards}">
             <span class="award-icon">🏅</span>
             <strong th:text="${aw.title}">MVP</strong>
-            <span th:text="#{award.reward(${aw.points}, ${@fmt.money(aw.bonus)})}">+2</span>
+            <span th:text="#{award.reward(${aw.points}, ${@fmt.money(aw.bonus, player.leagueMode)})}">+2</span>
         </div>
         <form th:if="${nextRound != null}" th:action="@{/players/{id}/postseason/play(id=${player.id})}" method="post">
             <button type="submit" class="btn btn-primary" th:text="#{postseason.playRound(${nextRound.label})}">와일드카드 시리즈 진행</button>
@@ -39,11 +39,11 @@
 
     <!-- 대진 -->
     <section class="card section" th:each="r : ${rounds}" th:if="${!#lists.isEmpty(bracket.round(r.number))}">
-        <h2 class="section-title" th:text="#{postseason.round(${r.label}, ${r.winsNeeded()})}">와일드카드</h2>
+        <h2 class="section-title" th:text="${r.highSeedStartWins() > 0} ? #{postseason.roundAdvantage(${r.label}, ${r.winsNeeded()}, ${r.highSeedStartWins()})} : #{postseason.round(${r.label}, ${r.winsNeeded()})}">와일드카드</h2>
         <div class="bracket-grid">
             <div class="bracket-series" th:each="s : ${bracket.round(r.number)}"
                  th:classappend="${s.userTeam} ? 'my-series'">
-                <small class="muted" th:text="${s.league == 'WS'} ? #{postseason.ws} : (${s.league == 'AL'} ? #{league.al} : #{league.nl})">AL</small>
+                <small class="muted" th:unless="${s.league == 'KBO'}" th:text="${s.league == 'WS'} ? #{postseason.ws} : (${s.league == 'AL'} ? #{league.al} : #{league.nl})">AL</small>
                 <div class="bracket-row" th:classappend="${s.winnerId != null and s.winnerId == s.highTeamId} ? 'winner'">
                     <span th:text="${s.highSeed} + '. ' + ${teams[s.highTeamId].displayName}">1. 팀</span>
                     <strong th:text="${s.highWins}">0</strong>

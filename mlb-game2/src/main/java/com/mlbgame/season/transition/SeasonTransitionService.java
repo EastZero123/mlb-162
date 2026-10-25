@@ -8,6 +8,8 @@ import com.mlbgame.league.TeamRepository;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
 import com.mlbgame.league.stats.LeagueAverageService;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorld;
 import com.mlbgame.league.world.LeagueWorldService;
 import com.mlbgame.league.world.NpcPlayer;
@@ -26,11 +28,9 @@ import com.mlbgame.reputation.ReputationService;
 import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.SeasonProgressException;
 import com.mlbgame.season.SeasonService;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -109,8 +109,9 @@ public class SeasonTransitionService {
         }
         LeagueWorld world = leagueWorldService.getOrCreate(playerId);
         int year = world.getCurrentYear();
+        LeagueRuleset rules = LeagueRulesets.of(world);
 
-        StandingsTable table = standingsService.standings(world, year, PlayerSeason.SERIES_PER_SEASON,
+        StandingsTable table = standingsService.standings(world, year, rules.seriesPerSeason(),
                 player.getTeam().getId(), seasonService.mlbSeason(userId, playerId).teamResults());
 
         // 1~2. 내 선수 부상 회복·나이·노화·은퇴
@@ -142,12 +143,13 @@ public class SeasonTransitionService {
         List<NpcPlayer> npcs = npcPlayerRepository.findByWorldIdAndStatusIn(world.getId(),
                 List.of(NpcStatus.MLB, NpcStatus.MINORS, NpcStatus.FA));
         List<NpcPlayer> created = new ArrayList<>();
-        Report report = WorldEvolution.evolve(seed(world.getSeed(), year + 1), world.getId(), teams, npcs, winPct, created);
+        Report report = WorldEvolution.evolve(seed(world.getSeed(), year + 1), world.getId(), teams, npcs, winPct, created,
+                rules.payroll());
         npcPlayerRepository.saveAll(created);
 
         // 5. 다음 시즌
         world.advanceYear();
-        List<String> lines = new ArrayList<>(headlines(player, report, aging, trainingNews, retired, year + 1));
+        List<String> lines = new ArrayList<>(headlines(player, report, aging, trainingNews, retired, year + 1, rules));
         lines.addAll(1, contractNews);
         lines.addAll(1, reputationNews);
         if (wasInjured && !retired) {
@@ -161,10 +163,9 @@ public class SeasonTransitionService {
     }
 
     private List<String> headlines(Player player, Report report, Map<Attribute, Integer> aging,
-                                   List<String> trainingNews, boolean retired, int year) {
+                                   List<String> trainingNews, boolean retired, int year, LeagueRuleset rules) {
         Map<Long, Team> teams = teamRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(Team::getId, Function.identity()));
-        NumberFormat money = NumberFormat.getIntegerInstance(Locale.US);
         List<String> lines = new ArrayList<>();
         if (retired) {
             lines.add(Messages.get("offseason.retired", player.getName(), player.getAge()));
@@ -181,7 +182,7 @@ public class SeasonTransitionService {
                 report.callUps()));
         for (Signing s : report.signings().stream().limit(3).toList()) {
             lines.add(Messages.get("offseason.bigSigning", s.name(), Math.round(s.overall()),
-                    teams.get(s.teamId()).getDisplayName(), s.years(), "$" + money.format(s.salary())));
+                    teams.get(s.teamId()).getDisplayName(), s.years(), rules.payroll().format(s.salary())));
         }
         return lines;
     }

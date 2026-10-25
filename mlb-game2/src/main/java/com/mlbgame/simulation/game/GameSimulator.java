@@ -1,6 +1,7 @@
 package com.mlbgame.simulation.game;
 
 import com.mlbgame.common.Messages;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.player.Hand;
 import com.mlbgame.player.Position;
 import com.mlbgame.simulation.BatterProfile;
@@ -10,6 +11,7 @@ import com.mlbgame.simulation.PaResult;
 import com.mlbgame.simulation.PitcherProfile;
 import com.mlbgame.simulation.PlateAppearanceModel;
 import com.mlbgame.simulation.SimulationBalance;
+import com.mlbgame.simulation.SimulationBalance.Baseline;
 import com.mlbgame.simulation.game.UserHitter.HitterRole;
 import com.mlbgame.simulation.game.UserPitcher.PitcherRole;
 import java.util.ArrayList;
@@ -66,7 +68,12 @@ public class GameSimulator {
     }
 
     public GameResult simulate(GameSetup setup, RandomGenerator random) {
-        return new Game(setup, random).play();
+        return simulate(setup, random, LeagueMode.MLB);
+    }
+
+    /** @param mode 리그 평균 기록을 고를 모드 (능력치 계수는 공통) */
+    public GameResult simulate(GameSetup setup, RandomGenerator random, LeagueMode mode) {
+        return new Game(setup, random, balance.baseline(mode)).play();
     }
 
     /** 수비 위치별로 인플레이 타구가 그 선수에게 갈 확률 */
@@ -95,6 +102,7 @@ public class GameSimulator {
 
         final GameSetup setup;
         final RandomGenerator rng;
+        final Baseline baseline;
         final int us;
         final int them;
         final UserHitter hitter;
@@ -133,7 +141,8 @@ public class GameSimulator {
         int closerEntryDiff;
         int closerExitDiff;
 
-        Game(GameSetup setup, RandomGenerator rng) {
+        Game(GameSetup setup, RandomGenerator rng, Baseline baseline) {
+            this.baseline = baseline;
             this.setup = setup;
             this.rng = rng;
             this.us = setup.home() ? 1 : 0;
@@ -277,7 +286,7 @@ public class GameSimulator {
             boolean risp = bases[1] != EMPTY || bases[2] != EMPTY;
 
             PaProbabilities p = model.probabilities(batter, mound.profile(),
-                    new PaContext(risp, batterForm, mound.form()));
+                    new PaContext(risp, batterForm, mound.form(), baseline));
             PaResult result = p.draw(rng);
 
             boolean userFielder = false;

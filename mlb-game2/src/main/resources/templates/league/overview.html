@@ -4,15 +4,42 @@
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container">
-    <h1 class="page-title" th:text="#{league.title(${season.seasonYear})}">2026 메이저리그 현황</h1>
+    <h1 class="page-title" th:text="#{league.title(${season.seasonYear}, ${terms.top})}">2026 메이저리그 현황</h1>
     <p class="muted">
         <span th:text="#{league.progress(${season.seriesPlayed})}">진행</span> ·
         <th:block th:text="#{league.myTeam}">내 소속</th:block> <strong th:text="${@fmt.teamName(player.team, season.leagueLevel)}">팀</strong>
-        <span th:if="${season.leagueLevel.name() != 'MLB'}" th:text="#{league.mlbStandingsNote}">(메이저 구단 순위를 표시합니다)</span>
+        <span th:unless="${season.leagueLevel.top}" th:text="#{league.mlbStandingsNote(${terms.top})}">(메이저 구단 순위를 표시합니다)</span>
     </p>
 
-    <!-- 순위표 -->
-    <div class="league-grid">
+    <!-- 순위표: 지구가 없는 리그(KBO)는 한 표 + 5위까지 진출 -->
+    <section class="card section" th:if="${#lists.isEmpty(divisions)}">
+        <h2 class="section-title" th:text="#{league.oneTable(${terms.top})}">순위</h2>
+        <table class="stat-table">
+            <thead><tr><th th:text="#{league.col.rank}">순위</th><th class="left" th:text="#{league.col.team}">팀</th>
+                <th th:text="#{league.col.w}">승</th><th th:text="#{league.col.l}">패</th>
+                <th th:text="#{league.col.pct}">승률</th><th th:text="#{league.col.gb}">승차</th></tr></thead>
+            <tbody>
+            <tr th:each="d, it : ${table.overall()}" th:classappend="${d.row().team().id == myTeamId} ? 'my-team'">
+                <td th:text="${it.count}">1</td>
+                <td class="left" th:text="${d.row().team().displayName}">팀</td>
+                <td th:text="${d.row().wins()}">0</td>
+                <td th:text="${d.row().losses()}">0</td>
+                <td th:text="${@fmt.rate(d.row().pct())}">.000</td>
+                <td th:text="${d.gamesBehind() == 0} ? '-' : ${@fmt.one(d.gamesBehind())}">-</td>
+            </tr>
+            </tbody>
+        </table>
+        <h3 class="sub-title" th:text="#{league.playoffSeeds}">포스트시즌 진출권 (현재 기준)</h3>
+        <ol class="seed-list">
+            <li th:each="d, it : ${table.overall()}" th:if="${it.count <= 5}"
+                th:classappend="${d.row().team().id == myTeamId} ? 'my-team'">
+                <span th:text="${d.row().team().displayName}">팀</span>
+                <small class="muted" th:text="#{${'league.kboSeed.' + (it.count < 5 ? it.count : 5)}}">한국시리즈 직행</small>
+            </li>
+        </ol>
+    </section>
+
+    <div class="league-grid" th:unless="${#lists.isEmpty(divisions)}">
         <section class="card section" th:each="lg : ${leagues}">
             <h2 class="section-title" th:text="${lg == 'AL'} ? #{league.al} : #{league.nl}">아메리칸리그</h2>
             <div th:each="dv : ${divisions}" class="division">

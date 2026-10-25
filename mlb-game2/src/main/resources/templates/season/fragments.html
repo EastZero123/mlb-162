@@ -85,9 +85,9 @@
             <small th:text="${season.fatigue}">0</small>
         </div>
         <div th:unless="${season.completed}">
-            <span class="muted small" th:text="${season.leagueLevel.name() == 'MLB'} ? #{status.nextStayReview} : #{status.nextPromotionReview}">다음 승격 평가</span>
-            <strong th:with="left=${9 - season.seriesPlayed % 9}"
-                    th:text="${season.seriesPlayed + left >= 54} ? #{status.afterSeason} : #{status.afterSeries(${left})}">9시리즈 후</strong>
+            <span class="muted small" th:text="${season.leagueLevel.top} ? #{status.nextStayReview} : #{status.nextPromotionReview}">다음 승격 평가</span>
+            <strong th:with="iv=${rules.promotion().interval()},left=${iv - season.seriesPlayed % iv}"
+                    th:text="${season.seriesPlayed + left >= rules.seriesPerSeason()} ? #{status.afterSeason} : #{status.afterSeries(${left})}">9시리즈 후</strong>
         </div>
         <div>
             <span class="muted small" th:text="#{points.title}">스탯업 포인트</span>

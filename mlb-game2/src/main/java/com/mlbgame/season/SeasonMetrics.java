@@ -1,6 +1,7 @@
 package com.mlbgame.season;
 
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.stats.AdvancedStats;
 import com.mlbgame.league.stats.LeagueAverageService;
 import com.mlbgame.league.stats.LeagueAverages;
@@ -72,10 +73,11 @@ public class SeasonMetrics {
                     yearSplits.clear();
                     currentYear = row.year();
                 }
-                LeagueAverages lg = row.level() == LeagueLevel.MLB ? league.of(row.year()) : null;
+                LeagueAverages lg = row.level().isTop() ? league.of(row.year()) : null;
                 detail = pitcher
                         ? new DetailRow(row, null, AdvancedStats.pitcher(row.pitching(), lg))
-                        : new DetailRow(row, AdvancedStats.hitter(row.batting(), row.fielding(), position, lg), null);
+                        : new DetailRow(row, AdvancedStats.hitter(row.batting(), row.fielding(), position, lg,
+                                LeagueRulesets.of(row.level()).seasonGames()), null);
                 yearSplits.add(detail);
                 allSplits.add(detail);
             } else {

@@ -25,6 +25,7 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "player_seasons")
 public class PlayerSeason extends BaseTimeEntity {
 
+    /** MLB 정규시즌 시리즈 수 — 모드별 값은 {@code LeagueRuleset.seriesPerSeason()} */
     public static final int SERIES_PER_SEASON = 54;
 
     @Id
@@ -132,13 +133,14 @@ public class PlayerSeason extends BaseTimeEntity {
     /**
      * 시리즈 결과 반영. 기록 JSON 은 서비스가 합산해서 넘긴다.
      *
-     * @param sidelined 부상으로 결장한 시리즈였는지
+     * @param sidelined       부상으로 결장한 시리즈였는지
+     * @param seriesPerSeason 모드의 정규시즌 시리즈 수 (시즌 아웃 부상 기간·시즌 종료 판정)
      */
-    void applySeries(SeriesResult result, CarryOver next, boolean sidelined,
+    void applySeries(SeriesResult result, CarryOver next, boolean sidelined, int seriesPerSeason,
                      String battingJson, String pitchingJson, String fieldingJson) {
         teamWins += result.wins();
         teamLosses += result.losses();
-        if (leagueLevel == LeagueLevel.MLB) {
+        if (leagueLevel.isTop()) {                  // 최상위 레벨 시리즈 수 (서비스 연수·주요 시즌)
             mlbSeriesPlayed++;
         }
         fatigue = next.fatigue();
@@ -159,13 +161,13 @@ public class PlayerSeason extends BaseTimeEntity {
         if (result.injury() != null) {
             injurySeverity = result.injury().severity().name();
             injuredSeriesRemaining = result.injury().isSeasonEnding()
-                    ? SERIES_PER_SEASON
+                    ? seriesPerSeason
                     : result.injury().seriesOut();
         }
 
         nextSeriesNo++;
         trainingPending = true;
-        if (nextSeriesNo > SERIES_PER_SEASON) {
+        if (nextSeriesNo > seriesPerSeason) {
             status = SeasonStatus.COMPLETED;
         }
     }

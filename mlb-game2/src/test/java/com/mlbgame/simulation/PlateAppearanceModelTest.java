@@ -18,8 +18,12 @@ public class PlateAppearanceModelTest {
         return new SimulationBalance(65,
                 new Baseline(0.225, 0.085, 0.011, 0.031, 0.295, 0.23, 0.02, 0.45),
                 new Coefficients(0.30, 0.20, 0.10, 0.25, 0.25, 0.35, 0.28, 0.07,
-                        0.12, 0.04, 0.10, 0.06, 0.20, 0.20, 0.35, 0.15, 0.15, 0.10, 0.08));
+                        0.12, 0.04, 0.10, 0.06, 0.20, 0.20, 0.35, 0.15, 0.15, 0.10, 0.08),
+                KBO_BASELINE);
     }
+
+    /** application.yml 의 game.simulation.kbo-baseline 과 같은 값 */
+    public static final Baseline KBO_BASELINE = new Baseline(0.190, 0.090, 0.013, 0.023, 0.318, 0.22, 0.015, 0.46);
 
     final PlateAppearanceModel model = new PlateAppearanceModel(defaultBalance());
     final PitcherProfile mlbPitcher = PitcherProfile.average(65);
@@ -39,6 +43,21 @@ public class PlateAppearanceModelTest {
         assertThat(p.expectedAverage()).isBetween(0.240, 0.255);   // MLB 평균 타율 .245~.250
         assertThat(p.expectedObp()).isBetween(0.305, 0.325);       // MLB 평균 출루율 ~.315
         assertThat(p.expectedSlg()).isBetween(0.380, 0.420);       // MLB 평균 장타율 ~.400
+    }
+
+    @Test
+    void KBO_1군_평균끼리_만나면_KBO_리그_평균이_나온다() {
+        PaContext kbo = PaContext.NEUTRAL.withBaseline(model.baseline(com.mlbgame.league.LeagueMode.KBO));
+        PaProbabilities p = model.probabilities(BatterProfile.average(65), mlbPitcher, kbo);
+
+        assertThat(p.total()).isCloseTo(1.0, within(1e-9));
+        assertThat(p.strikeout()).isCloseTo(0.190, within(1e-9));
+        assertThat(p.homeRun()).isCloseTo(0.023, within(1e-9));
+        assertThat(p.expectedAverage()).isBetween(0.260, 0.276);   // KBO 평균 타율 .265~.270 (2023~2025)
+        assertThat(p.expectedObp()).isBetween(0.335, 0.355);       // ~.345
+        assertThat(p.expectedSlg()).isBetween(0.385, 0.425);       // ~.405
+        // MLB 보다 삼진이 적고 타율이 높다
+        assertThat(p.expectedAverage()).isGreaterThan(vsMlb(BatterProfile.average(65)).expectedAverage());
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.mlbgame.combine;
 
 import com.mlbgame.common.Dice;
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
 import com.mlbgame.league.world.LeagueWorldService;
@@ -23,11 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class DraftService {
 
-    static final int TEAMS_PER_ROUND = 30;
     /** 드래프트 연도 (첫 시즌 2026 의 전년도) */
     public static final int DRAFT_YEAR = WorldGenerator.FIRST_SEASON - 1;
-    /** 대졸은 이 라운드까지 싱글A에서 시작, 그 외(고졸 포함)는 루키리그 */
-    static final int COLLEGE_A_LEVEL_MAX_ROUND = 10;
 
     private final PlayerService playerService;
     private final CombineSummaryRepository summaryRepository;
@@ -55,17 +53,18 @@ public class DraftService {
         player.requireStage(PlayerStage.COMBINE_DONE); // 드래프트는 1회만
         CombineSummary summary = summaryRepository.findById(playerId).orElseThrow();
 
-        int round = summary.getGrade().roundFor(summary.getTotalScore());
-        int pickInRound = 1 + dice.nextInt(TEAMS_PER_ROUND);
-        int overallPick = (round - 1) * TEAMS_PER_ROUND + pickInRound;
+        DraftRules rules = LeagueRulesets.of(player).draft();
+        int round = rules.round(summary.getGrade().roundFor(summary.getTotalScore()));
+        int pickInRound = 1 + dice.nextInt(rules.teamsPerRound());
+        int overallPick = (round - 1) * rules.teamsPerRound() + pickInRound;
 
-        List<Team> teams = teamRepository.findAllByOrderByIdAsc();
+        List<Team> teams = teamRepository.findByLeagueModeOrderByIdAsc(player.getLeagueMode());
         Team team = teams.get(dice.nextInt(teams.size()));
-        LeagueLevel startLevel = startLevel(player.getEducation(), round);
+        LeagueLevel startLevel = rules.startLevel(player.getEducation(), round);
 
         player.draft(team, startLevel);
         DraftResult result = draftResultRepository.save(new DraftResult(player.getId(), round, pickInRound,
-                overallPick, team, signingBonus(overallPick), startLevel));
+                overallPick, team, rules.signingBonus(overallPick), startLevel));
         leagueWorldService.getOrCreate(player.getId());   // 이 커리어의 2026시즌 리그 월드 생성
         earningsService.add(player.getId(), DRAFT_YEAR, EarningType.SIGNING_BONUS, result.getSigningBonus());
         return result;
@@ -78,12 +77,11 @@ public class DraftService {
     }
 
     static LeagueLevel startLevel(Education education, int round) {
-        return education == Education.COLLEGE && round <= COLLEGE_A_LEVEL_MAX_ROUND ? LeagueLevel.A : LeagueLevel.ROOKIE;
+        return DraftRules.MLB.startLevel(education, round);
     }
 
     /** 전체 1순위 950만 달러에서 지명 순번마다 4%씩 감소, 최저 15만 달러 (1만 달러 단위) */
     static long signingBonus(int overallPick) {
-        double bonus = 9_500_000 * Math.pow(0.96, overallPick - 1);
-        return Math.max(150_000, Math.round(bonus / 10_000) * 10_000);
+        return DraftRules.MLB.signingBonus(overallPick);
     }
 }

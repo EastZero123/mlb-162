@@ -1,6 +1,7 @@
 package com.mlbgame.simulation;
 
 import com.mlbgame.player.Hand;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.simulation.SimulationBalance.Baseline;
 import com.mlbgame.simulation.SimulationBalance.Coefficients;
 import org.springframework.stereotype.Component;
@@ -27,8 +28,13 @@ public class PlateAppearanceModel {
         this.balance = balance;
     }
 
+    /** 모드의 리그 평균 기록 ({@link PaContext#withBaseline} 에 넣어 쓴다) */
+    public Baseline baseline(LeagueMode mode) {
+        return balance.baseline(mode);
+    }
+
     public PaProbabilities probabilities(BatterProfile batter, PitcherProfile pitcher, PaContext context) {
-        Baseline base = balance.baseline();
+        Baseline base = context.baseline() != null ? context.baseline() : balance.baseline();
         Coefficients c = balance.coefficients();
         double bf = context.batterFormOffset();
         double pf = context.pitcherFormOffset();

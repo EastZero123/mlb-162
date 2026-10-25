@@ -2,9 +2,12 @@ package com.mlbgame.ranking;
 
 import com.mlbgame.auth.AuthUser;
 import com.mlbgame.career.CareerService;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
+import com.mlbgame.league.mode.ModeCookie;
 import com.mlbgame.ranking.RankingService.Period;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,12 +35,14 @@ public class RankingController {
     @GetMapping("/rankings")
     public String rankings(@AuthenticationPrincipal AuthUser authUser,
                            @RequestParam(defaultValue = "EARNINGS") RankingCategory category,
-                           @RequestParam(defaultValue = "ALL") Period period, Model model) {
+                           @RequestParam(defaultValue = "ALL") Period period, HttpServletRequest request,
+                           Model model) {
+        LeagueMode mode = ModeCookie.read(request);                   // 상단 탭의 모드 랭킹
         model.addAttribute("category", category);
         model.addAttribute("period", period);
         model.addAttribute("categories", RankingCategory.values());
         model.addAttribute("periods", Period.values());
-        model.addAttribute("rows", rankingService.top(category, period));
+        model.addAttribute("rows", rankingService.top(category, period, mode));
         model.addAttribute("myUserId", authUser == null ? null : authUser.getId());   // 비로그인 열람 가능
         return "ranking/list";
     }

@@ -85,7 +85,12 @@ public class Bracket {
     }
 
     public Long champion() {
-        return series.stream().filter(s -> s.round == PostseasonRound.WORLD_SERIES.getNumber() && s.finished())
+        return champion(PostseasonRound.WORLD_SERIES.getNumber());
+    }
+
+    /** 마지막 라운드 승자 */
+    public Long champion(int finalRound) {
+        return series.stream().filter(s -> s.round == finalRound && s.finished())
                 .map(s -> s.winnerId).findFirst().orElse(null);
     }
 }

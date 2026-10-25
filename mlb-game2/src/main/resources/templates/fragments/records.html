@@ -10,7 +10,7 @@
 <th:block th:fragment="label(r)">
     <th:block th:if="${r.split}">
         <span th:text="${@fmt.teamName(r.team(), r.level())}">뉴욕 양키스</span>
-        <span class="champion-mark" th:if="${r.champion()}" th:title="#{records.champion}">🏆</span>
+        <span class="champion-mark" th:if="${r.champion()}" th:title="#{records.champion(${terms.finals})}">🏆</span>
     </th:block>
     <th:block th:if="${r.kind().name() == 'YEAR_TOTAL'}" th:text="#{records.yearTotal(${r.teamCount()})}">합계 (2팀)</th:block>
     <th:block th:if="${r.kind().name() == 'CAREER_TOTAL'}" th:text="#{records.careerTotal}">통산</th:block>
@@ -134,7 +134,7 @@
 </div>
 
 <!-- 세부 지표 설명 (표 아래) -->
-<p th:fragment="detailNote" class="muted small" th:text="#{records.detailNote}">
+<p th:fragment="detailNote" class="muted small" th:text="#{records.detailNote(${terms.topShort}, ${terms.minorShort})}">
     wRC+·OPS+·ERA+ 는 리그 평균이 100(높을수록 좋음), FIP− 는 100(낮을수록 좋음), WAR 는 대체 선수 대비 승리 기여입니다.
 </p>
 

@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mlbgame.award.Award;
 import com.mlbgame.award.AwardService;
 import com.mlbgame.common.Messages;
+import com.mlbgame.career.HallOfFameService;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.trade.TradeEvent;
 import com.mlbgame.trade.TradeRules;
 import com.mlbgame.trade.TradeService;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorld;
 import com.mlbgame.league.world.LeagueWorldService;
 import com.mlbgame.player.Attribute;
@@ -63,6 +66,7 @@ public class SeasonService {
     private final ContractService contractService;
     private final TradeService tradeService;
     private final EarningsService earningsService;
+    private final HallOfFameService hallOfFameService;
     private final ObjectMapper objectMapper;
 
     public SeasonService(PlayerService playerService, LeagueWorldService leagueWorldService,
@@ -70,7 +74,7 @@ public class SeasonService {
                          SeriesRecorder seriesRecorder, SeriesRecordRepository seriesRecordRepository,
                          LevelChangeRepository levelChangeRepository, AwardService awardService,
                          ContractService contractService, TradeService tradeService, EarningsService earningsService,
-                         ObjectMapper objectMapper) {
+                         HallOfFameService hallOfFameService, ObjectMapper objectMapper) {
         this.awardService = awardService;
         this.tradeService = tradeService;
         this.contractService = contractService;
@@ -82,6 +86,7 @@ public class SeasonService {
         this.seriesRecordRepository = seriesRecordRepository;
         this.levelChangeRepository = levelChangeRepository;
         this.earningsService = earningsService;
+        this.hallOfFameService = hallOfFameService;
         this.objectMapper = objectMapper;
     }
 
@@ -123,13 +128,14 @@ public class SeasonService {
         }
 
         LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
+        LeagueRuleset rules = LeagueRulesets.of(player);
         int seriesNo = season.getNextSeriesNo();
         Matchup matchup = scheduleService.matchups(world, season.getSeasonYear(), player.getTeam(), season.getLeagueLevel())
                 .get(seriesNo - 1);
         boolean sidelined = season.isSidelined();
 
         SeriesInput input = new SeriesInput(SeriesRecorder.newSeed(), season.getLeagueLevel(), matchup.series().home(),
-                matchup.team(), matchup.opponentRatings(), SeriesInput.DEFAULT_GAMES, PlayerSnapshot.of(player),
+                matchup.team(), matchup.opponentRatings(), matchup.series().games(), PlayerSnapshot.of(player),
                 season.getFatigue(), season.usage(), sidelined);
         PlayedSeries played = seriesRecorder.play(player.getId(), season.getSeasonYear(), seriesNo,
                 player.getTeam().getId(), input);
@@ -143,7 +149,7 @@ public class SeasonService {
         if (result.fielding() != null) fielding.add(result.fielding());
 
         SeriesSimulator.CarryOver next = SeriesSimulator.carryOver(result, player.attribute(Attribute.DURABILITY));
-        season.applySeries(result, next, sidelined,
+        season.applySeries(result, next, sidelined, rules.seriesPerSeason(),
                 player.isPitcher() ? null : write(batting),
                 player.isPitcher() ? write(pitching) : null,
                 player.isPitcher() ? null : write(fielding));
@@ -157,8 +163,8 @@ public class SeasonService {
 
         // 시상은 이번 달을 뛴 레벨 기준으로 먼저 판정하고, 그다음 승격·강등
         List<Award> awards = awardService.evaluateAfterSeries(player, season, seriesNo, season.getLeagueLevel(), world);
-        LevelChange levelChange = evaluatePromotion(player, season, seriesNo);
-        TradeEvent trade = TradeRules.inWindow(seriesNo, season.getLeagueLevel())
+        LevelChange levelChange = evaluatePromotion(player, season, seriesNo, rules);
+        TradeEvent trade = TradeRules.inWindow(seriesNo, rules.tradeEligible(season.getLeagueLevel()))
                 ? tradeService.afterSeries(player, season, seriesNo, world, mlbSeason(userId, playerId).teamResults())
                 : null;
         return new SeriesOutcome(season, matchup, played.record(), result, sidelined, levelChange, awards, trade);
@@ -179,26 +185,33 @@ public class SeasonService {
         return tradeService.request(player, season, world, mlbSeason(userId, playerId).teamResults());
     }
 
-    /** 9시리즈마다 승격·강등 판정 (부상 결장 중이면 판정하지 않음) */
-    private LevelChange evaluatePromotion(Player player, PlayerSeason season, int seriesNo) {
+    /** 판정 주기(MLB 9시리즈)마다 승격·강등 판정 (부상 결장 중이면 판정하지 않음, 레전드는 최상위 레벨 강등 면제) */
+    private LevelChange evaluatePromotion(Player player, PlayerSeason season, int seriesNo, LeagueRuleset rules) {
+        PromotionRules.Params params = rules.promotion();
         if (season.isCompleted() || season.isSidelined()
-                || !PromotionRules.isEvaluationPoint(seriesNo, PlayerSeason.SERIES_PER_SEASON)) {
+                || !PromotionRules.isEvaluationPoint(params, seriesNo, rules.seriesPerSeason())) {
             return null;
         }
         BattingLine recentBatting = new BattingLine();
         PitchingLine recentPitching = new PitchingLine();
         seriesRecordRepository.findByPlayerIdAndSeasonYearOrderBySeriesNoAsc(player.getId(), season.getSeasonYear())
                 .stream()
-                .filter(r -> r.getSeriesNo() > seriesNo - PromotionRules.EVALUATION_INTERVAL)
+                .filter(r -> r.getSeriesNo() > seriesNo - params.interval())
                 .map(seriesRecorder::readSummary)
                 .forEach(summary -> {
                     if (summary.batting() != null) recentBatting.add(summary.batting());
                     if (summary.pitching() != null) recentPitching.add(summary.pitching());
                 });
 
-        Decision decision = PromotionRules.evaluate(season.getLeagueLevel(), player.getOverall(),
+        LeagueLevel level = season.getLeagueLevel();
+        Decision decision = PromotionRules.evaluate(params, level, rules.above(level), rules.below(level), player.getOverall(),
                 player.getPosition(), recentBatting, recentPitching);
         if (!decision.moved()) {
+            return null;
+        }
+        // 점수 계산은 커리어 전체 기록을 읽으므로 메이저 강등 판정이 나왔을 때만 한다
+        if (decision.verdict() == PromotionRules.Verdict.DEMOTE
+                && PromotionRules.isDemotionExempt(params, decision.from(), hallOfFameService.currentScore(player))) {
             return null;
         }
         player.moveToLevel(decision.to());
@@ -245,7 +258,7 @@ public class SeasonService {
         Map<Integer, int[]> results = new HashMap<>();
         for (SeriesRecord record : seriesRecordRepository
                 .findByPlayerIdAndSeasonYearOrderBySeriesNoAsc(playerId, season.getSeasonYear())) {
-            if (record.getLeagueLevel() != LeagueLevel.MLB) {
+            if (!record.getLeagueLevel().isTop()) {
                 continue;
             }
             SeriesSummary summary = seriesRecorder.readSummary(record);

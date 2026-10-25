@@ -5,34 +5,69 @@
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow">
     <h1 class="page-title">패치노트</h1>
-    <p class="muted">업데이트 내역입니다. 최신 패치가 위에 있어요.</p>
+    <p class="muted">MLB·KBO 모드 업데이트 내역입니다. 최신 패치가 위에 있어요.</p>
+
+    <!-- 모드 필터: 태그 없는 항목은 공통이라 어느 필터에서나 보인다 (스크립트가 없으면 전부 보임, app.js) -->
+    <div class="tab-row patch-filter" role="group" aria-label="모드별 보기">
+        <button type="button" class="tab active" data-patch-filter="all" aria-pressed="true">전체</button>
+        <button type="button" class="tab" data-patch-filter="mlb" aria-pressed="false">MLB</button>
+        <button type="button" class="tab" data-patch-filter="kbo" aria-pressed="false">KBO</button>
+    </div>
 
     <!--
         새 패치를 추가하는 방법: 아래 빈 틀을 복사해 이 주석 바로 아래(가장 위)에 붙여 넣고 내용만 바꾸세요.
         영어 화면용 patch-notes-en.html 에도 같은 패치를 영어로 넣어 주세요.
         - 버전·날짜: patch-version / time 태그
         - 분류: "버그 수정", "개선", "신규" 등 <h3> 단위로 나눕니다 (안 쓰는 분류는 통째로 지우세요)
-        - 항목: <li> 한 줄에 하나
+        - 항목: <li> 한 줄에 하나. 한 모드에만 해당하면 data-mode 와 태그를 붙입니다 (없으면 공통)
+            공통 <li>내용</li>
+            MLB  <li data-mode="mlb"><span class="mode-tag mlb">MLB</span>내용</li>
+            KBO  <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>내용</li>
 
         <article class="card section patch-note">
             <header class="patch-head">
-                <h2 class="section-title"><span class="patch-version">v0.0.2</span> 패치 제목</h2>
+                <h2 class="section-title"><span class="patch-version">v1.0.1</span> 패치 제목</h2>
                 <time class="muted small" datetime="2026-01-01">2026.01.01</time>
             </header>
             <h3 class="patch-kind">버그 수정</h3>
             <ul class="patch-list">
-                <li>수정한 내용</li>
-            </ul>
-            <h3 class="patch-kind">개선</h3>
-            <ul class="patch-list">
-                <li>바뀐 내용</li>
-            </ul>
-            <h3 class="patch-kind">신규</h3>
-            <ul class="patch-list">
-                <li>추가된 기능</li>
+                <li>공통으로 고친 내용</li>
+                <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>KBO 모드에서만 고친 내용</li>
             </ul>
         </article>
     -->
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v1.0.0</span>
+                KBO 모드 오픈 · 레전드 예우
+            </h2>
+            <time class="muted small" datetime="2026-10-25">2026.10.25</time>
+        </header>
+
+        <h3 class="patch-kind">신규</h3>
+        <ul class="patch-list">
+            <li>KBO 모드를 추가했습니다. 상단의 MLB | KBO 탭으로 모드를 바꾸면 대시보드·선수 생성·랭킹이 그 모드로 바뀌어요. 선수 화면은 그 선수의 모드로 보여줍니다.</li>
+            <li>선수 슬롯은 모드마다 따로 3개씩입니다. 랭킹도 모드별로 따로 집계해요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>실제 KBO 10개 구단으로 리그를 꾸렸습니다. 레벨은 퓨처스리그 → 1군 두 단계예요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>정규시즌은 144경기입니다. 3연전 36번 뒤 8~9월은 2연전 18번으로 치르고, 상대 팀마다 16경기(홈·원정 8경기씩)를 만나요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>1군 등록·말소를 3시리즈마다 판정합니다. 말소되면 다음 판정까지 1군에 올라올 수 없어요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>포스트시즌은 5위까지 진출하는 계단식입니다. 와일드카드 결정전(4위가 1승 안고 시작) → 준플레이오프 → 플레이오프 → 한국시리즈 순서예요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>시상: 월간 MVP, 올스타, 정규시즌 MVP(압도적인 선발투수도 받을 수 있음), 신인상, 골든글러브(타자 포지션별·투수), KBO 수비상, 개인 타이틀 8종(타격·홈런·타점·도루·다승·평균자책점·탈삼진·세이브), 플레이오프·한국시리즈 MVP, 퓨처스 시상.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>연봉은 원화입니다. 최저 연봉 3,000만원, 1군 1년 차부터 매년 연봉 협상, FA는 고졸 8년·대졸 7년이 지나면 얻어요. 스타 선수는 연 20억 이상도 받습니다.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>드래프트는 10개 구단 11라운드이고 전원 퓨처스에서 시작합니다. 구단마다 외국인 선수 3명이 뛰어요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>경기 결과는 KBO 리그 평균 기록(MLB 보다 삼진이 적고 타율이 높은 타고투저)에 맞춰 계산합니다.</li>
+        </ul>
+
+        <h3 class="patch-kind">개선</h3>
+        <ul class="patch-list">
+            <li>레전드 예우를 도입했습니다. 명예의 전당 점수가 150점 이상인 선수는 말년에 기량이 떨어져도 메이저리그(KBO 1군)에서 강등되지 않습니다. 출전 기회는 기량에 따라 줄어들 수 있어요.</li>
+            <li>커리어 화면과 랭킹 선수 프로필에서 명예의 전당 헌액·후보 표시를 없앴습니다. 명예의 전당 점수는 그대로 볼 수 있어요.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>퓨처스리그는 육성 리그라 고졸·대졸 신인도 꾸준히 출전합니다.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>명예의 전당 점수의 누적 기록(안타·홈런·승 등)은 KBO 가 144경기인 만큼 보정해서 계산합니다.</li>
+        </ul>
+    </article>
 
     <article class="card section patch-note">
         <header class="patch-head">

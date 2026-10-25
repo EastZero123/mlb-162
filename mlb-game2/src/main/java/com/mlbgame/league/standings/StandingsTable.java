@@ -34,6 +34,17 @@ public record StandingsTable(List<Row> rows) {
     public record PlayoffSeed(int seed, Row row, boolean divisionWinner) {
     }
 
+    /** 리그 전체 한 표 (지구가 없는 KBO) — 승차는 1위 기준 */
+    public List<DivisionRow> overall() {
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        Row leader = rows.get(0);
+        return rows.stream()
+                .map(r -> new DivisionRow(r, ((leader.wins() - r.wins()) + (r.losses() - leader.losses())) / 2.0))
+                .toList();
+    }
+
     public List<DivisionRow> division(String league, String division) {
         List<Row> teams = rows.stream()
                 .filter(r -> r.team().getLeague().equals(league) && r.team().getDivision().equals(division))

@@ -26,7 +26,7 @@ public class TeamStrengthService {
     public Map<Long, TeamRatings> ratingsByTeam(Long worldId, LeagueLevel level) {
         Map<Long, TeamRatings> result = new HashMap<>();
         List<WorldTeam> teams = worldTeamRepository.findByWorldIdOrderByIdAsc(worldId);
-        if (level == LeagueLevel.MLB) {
+        if (level.isTop()) {
             Map<Long, List<NpcPlayer>> rosters = npcPlayerRepository.findByWorldIdAndStatus(worldId, NpcStatus.MLB)
                     .stream().collect(Collectors.groupingBy(NpcPlayer::getTeamId));
             for (WorldTeam team : teams) {

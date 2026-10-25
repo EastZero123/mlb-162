@@ -30,7 +30,7 @@
         <div class="award-banner celebrate" th:each="aw : ${detail.awards()}">
             <span class="award-icon">🏆</span>
             <strong th:text="${aw.title}">5월 이달의 선수</strong>
-            <span th:text="#{award.reward(${aw.points}, ${@fmt.money(aw.bonus)})}">+1</span>
+            <span th:text="#{award.reward(${aw.points}, ${@fmt.money(aw.bonus, player.leagueMode)})}">+1</span>
         </div>
         <div class="level-banner" th:if="${detail.levelChange() != null}"
              th:classappend="${detail.levelChange().promotion} ? 'up' : 'down'">

@@ -1,6 +1,7 @@
 package com.mlbgame.ranking;
 
 import com.mlbgame.common.BaseTimeEntity;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.player.Position;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +40,12 @@ public class RankingEntry extends BaseTimeEntity {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 5)
     private Position position;
+
+    /** 게임 모드 — 랭킹은 모드별로 따로 본다 */
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "league_mode", nullable = false, length = 5)
+    private LeagueMode leagueMode = LeagueMode.MLB;
 
     @Column(name = "final_age", nullable = false)
     private int finalAge;
@@ -109,6 +116,11 @@ public class RankingEntry extends BaseTimeEntity {
         return e;
     }
 
+    public RankingEntry mode(LeagueMode leagueMode) {
+        this.leagueMode = leagueMode;
+        return this;
+    }
+
     public RankingEntry career(long earnings, int hallOfFame, int awardPoints, double combineScore) {
         this.careerEarnings = earnings;
         this.hallOfFame = hallOfFame;
@@ -142,6 +154,7 @@ public class RankingEntry extends BaseTimeEntity {
     public String getNickname() { return nickname; }
     public String getPlayerName() { return playerName; }
     public Position getPosition() { return position; }
+    public LeagueMode getLeagueMode() { return leagueMode; }
     public int getFinalAge() { return finalAge; }
     public int getSeasons() { return seasons; }
     public LocalDateTime getRetiredAt() { return retiredAt; }

@@ -1,5 +1,6 @@
 package com.mlbgame.league.world;
 
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.Team;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Hand;
@@ -7,6 +8,7 @@ import com.mlbgame.player.Position;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SplittableRandom;
+import java.util.function.Function;
 import java.util.random.RandomGenerator;
 
 /**
@@ -32,6 +34,9 @@ public final class WorldGenerator {
     static final double BENCH_OFFSET = -6;
     static final double BULLPEN_OFFSET = -3;
     static final double CLOSER_OFFSET = 2;
+    /** KBO 외국인 선수: 1·2선발과 지명타자 */
+    static final int FOREIGN_STARTERS = 2;
+    static final double FOREIGN_HITTER_BONUS = 4;
 
     private WorldGenerator() {
     }
@@ -70,31 +75,43 @@ public final class WorldGenerator {
     }
 
     public static List<GeneratedTeam> generate(long seed, List<Team> teams) {
+        return generate(seed, teams, PayrollRules.MLB);
+    }
+
+    /** @param payroll 모드별 연봉·예산 수치 */
+    public static List<GeneratedTeam> generate(long seed, List<Team> teams, PayrollRules payroll) {
         RandomGenerator random = new SplittableRandom(seed);
         List<GeneratedTeam> result = new ArrayList<>();
         for (Team team : teams) {
             Market market = Market.of(team.getCode());
             int spending = 85 + random.nextInt(31);
             int farm = 30 + random.nextInt(61);
-            long budget = Math.round(market.getBaseBudget() * spending / 100.0 / 1_000_000) * 1_000_000;
+            long budget = Math.round(payroll.baseBudget(market) * spending / 100.0 / payroll.budgetUnit()) * payroll.budgetUnit();
             double target = 65 + market.getTalentBonus() + (spending - 100) / 10.0 + random.nextGaussian() * 2.5;
+            // KBO: 외국인 3명 (1·2선발 + 지명타자, 지명타자는 거포형으로 더 강하게). MLB 는 모두 출신 비율대로
+            LeagueMode mode = team.getLeagueMode();
+            boolean kbo = mode == LeagueMode.KBO;
+            Function<RandomGenerator, String> local = r -> NameGenerator.next(r, mode);
+            Function<RandomGenerator, String> foreign = kbo ? NameGenerator::foreign : local;
 
             List<GeneratedNpc> roster = new ArrayList<>();
             for (Position position : LINEUP) {
-                roster.add(npc(random, position, target + LINEUP_OFFSET, RosterRole.LINEUP));
+                roster.add(npc(random, position, target + LINEUP_OFFSET, RosterRole.LINEUP, payroll, local));
             }
             Position dh = random.nextBoolean() ? Position.B1 : Position.OF;
-            roster.add(npc(random, dh, target + LINEUP_OFFSET, RosterRole.LINEUP));
+            roster.add(npc(random, dh, target + LINEUP_OFFSET + (kbo ? FOREIGN_HITTER_BONUS : 0), RosterRole.LINEUP, payroll,
+                    foreign));
             for (Position position : BENCH) {
-                roster.add(npc(random, position, target + BENCH_OFFSET, RosterRole.BENCH));
+                roster.add(npc(random, position, target + BENCH_OFFSET, RosterRole.BENCH, payroll, local));
             }
-            for (int offset : ROTATION_OFFSETS) {
-                roster.add(npc(random, Position.SP, target + offset, RosterRole.ROTATION));
+            for (int i = 0; i < ROTATION_OFFSETS.length; i++) {
+                roster.add(npc(random, Position.SP, target + ROTATION_OFFSETS[i], RosterRole.ROTATION, payroll,
+                        i < FOREIGN_STARTERS ? foreign : local));
             }
             for (int i = 0; i < RosterRole.BULLPEN.getSlots(); i++) {
-                roster.add(npc(random, Position.RP, target + BULLPEN_OFFSET, RosterRole.BULLPEN));
+                roster.add(npc(random, Position.RP, target + BULLPEN_OFFSET, RosterRole.BULLPEN, payroll, local));
             }
-            roster.add(npc(random, Position.CP, target + CLOSER_OFFSET, RosterRole.CLOSER));
+            roster.add(npc(random, Position.CP, target + CLOSER_OFFSET, RosterRole.CLOSER, payroll, local));
 
             result.add(new GeneratedTeam(team, market, spending, farm, budget, List.copyOf(roster)));
         }
@@ -119,7 +136,8 @@ public final class WorldGenerator {
         return bonus - STAR_MEAN;
     }
 
-    static GeneratedNpc npc(RandomGenerator random, Position position, double roleTarget, RosterRole role) {
+    static GeneratedNpc npc(RandomGenerator random, Position position, double roleTarget, RosterRole role,
+                            PayrollRules payroll, Function<RandomGenerator, String> names) {
         double star = starBonus(random, role);
         int overall = (int) Math.round(clamp(roleTarget + star + random.nextGaussian() * 4, 35, 92));
         int age = 22 + random.nextInt(9) + random.nextInt(8);          // 22~37, 29~30세가 가장 많음
@@ -132,16 +150,16 @@ public final class WorldGenerator {
         int serviceYears = Math.max(0, age - 23 - random.nextInt(3));
         long salary;
         int contractYears;
-        if (serviceYears >= Payroll.FREE_AGENCY_SERVICE) {
-            salary = Math.round(Payroll.marketValue(overall) * (0.8 + random.nextDouble() * 0.4) / 10_000) * 10_000;
+        if (serviceYears >= payroll.freeAgencyService()) {
+            salary = payroll.round(payroll.marketValue(overall) * (0.8 + random.nextDouble() * 0.4));
             contractYears = 1 + random.nextInt(5);
         } else {
-            salary = Payroll.salaryByService(serviceYears, overall);
+            salary = payroll.salaryByService(serviceYears, overall);
             contractYears = 1;
         }
 
-        return new GeneratedNpc(NameGenerator.next(random), position, bats, throwsHand, age, potential,
-                attributes(random, overall), role, Math.max(Payroll.MINIMUM_SALARY, salary), contractYears, serviceYears);
+        return new GeneratedNpc(names.apply(random), position, bats, throwsHand, age, potential,
+                attributes(random, overall), role, Math.max(payroll.minimumSalary(), salary), contractYears, serviceYears);
     }
 
     /** 11개 능력치를 OVR 주변으로 흩뿌리고 평균을 OVR 에 맞춘다 */

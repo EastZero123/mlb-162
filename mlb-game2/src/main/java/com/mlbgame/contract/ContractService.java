@@ -7,13 +7,17 @@ import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractOffer.Kind;
 import com.mlbgame.contract.ContractOffer.Status;
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.LeagueMode;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorld;
 import com.mlbgame.league.world.NpcPlayer;
 import com.mlbgame.league.world.NpcPlayerRepository;
 import com.mlbgame.league.world.NpcStatus;
-import com.mlbgame.league.world.Payroll;
+import com.mlbgame.league.world.PayrollRules;
 import com.mlbgame.league.world.WorldTeam;
 import com.mlbgame.league.world.WorldTeamRepository;
+import com.mlbgame.player.Education;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
 import com.mlbgame.reputation.ReputationRules;
@@ -22,12 +26,10 @@ import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.PlayerSeasonRepository;
 import com.mlbgame.season.SeasonProgressException;
 import com.mlbgame.training.InvalidTrainingException;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,15 +83,17 @@ public class ContractService {
 
     @Transactional(readOnly = true)
     public int serviceYears(Long playerId) {
-        int series = seasonRepository.findByPlayerIdOrderBySeasonYearAsc(playerId).stream()
-                .mapToInt(PlayerSeason::getMlbSeriesPlayed).sum();
-        return ContractRules.serviceYears(series);
+        List<PlayerSeason> seasons = seasonRepository.findByPlayerIdOrderBySeasonYearAsc(playerId);
+        int series = seasons.stream().mapToInt(PlayerSeason::getMlbSeriesPlayed).sum();
+        LeagueRuleset rules = seasons.isEmpty() ? LeagueRulesets.MLB
+                : LeagueRulesets.of(seasons.get(0).getLeagueLevel());      // 시즌 레벨로 모드를 안다
+        return ContractRules.serviceYears(series, rules.seriesPerServiceYear());
     }
 
     /** 메이저에 처음 올라오면 최저 연봉 계약 */
     public void ensureMlbContract(Player player, LeagueLevel level) {
-        if (level == LeagueLevel.MLB && player.getContractType() == ContractType.NONE) {
-            player.signContract(null, Payroll.MINIMUM_SALARY, 1, ContractType.PRE_ARB);
+        if (level.isTop() && player.getContractType() == ContractType.NONE) {
+            player.signContract(null, payroll(player).minimumSalary(), 1, ContractType.PRE_ARB);
         }
     }
 
@@ -98,12 +102,12 @@ public class ContractService {
         long annual;
         if (player.getContractType().isGuaranteed()) {
             annual = player.getSalary();
-        } else if (level == LeagueLevel.MLB) {
-            annual = Math.max(player.getSalary(), Payroll.MINIMUM_SALARY);
+        } else if (level.isTop()) {
+            annual = Math.max(player.getSalary(), payroll(player).minimumSalary());
         } else {
-            annual = Payroll.minorLeagueSalary(level);
+            annual = payroll(player).levelSalary(level);
         }
-        return Math.round((double) annual / PlayerSeason.SERIES_PER_SEASON);
+        return Math.round((double) annual / LeagueRulesets.of(player).seriesPerSeason());
     }
 
     @Transactional(readOnly = true)
@@ -144,35 +148,37 @@ public class ContractService {
         if (player.getContractYears() > 1) {
             player.passContractYear();
             lines.add(Messages.get("contract.news.remaining", player.getContractType().getLabel(), player.getContractYears(),
-                    money(player.getSalary())));
+                    money(player, player.getSalary())));
             return lines;
         }
 
-        if (service < Payroll.ARBITRATION_START) {
-            player.signContract(null, Payroll.MINIMUM_SALARY, 1, ContractType.PRE_ARB);
-            lines.add(Messages.get("contract.news.preArb", service, money(Payroll.MINIMUM_SALARY)));
-        } else if (service < Payroll.FREE_AGENCY_SERVICE) {
-            long fair = ContractRules.fairArbitration(service, value);
-            long offer = ContractRules.arbitrationOffer(fair);
+        if (service < payroll(player).arbitrationStart()) {
+            player.signContract(null, payroll(player).minimumSalary(), 1, ContractType.PRE_ARB);
+            lines.add(Messages.get("contract.news.preArb", service, money(player, payroll(player).minimumSalary())));
+        } else if (service < freeAgencyService(player)) {
+            long fair = ContractRules.fairArbitration(payroll(player), service, value);
+            long offer = ContractRules.arbitrationOffer(payroll(player), fair);
             offerRepository.save(new ContractOffer(player.getId(), newYear, Kind.ARBITRATION, player.getTeam(), 1, offer, fair));
-            lines.add(Messages.get("contract.news.arbitration", service, money(offer)));
+            lines.add(Messages.get("contract.news.arbitration", service, money(player, offer),
+                    LeagueRulesets.of(player).terms().arbitration()));
         } else {
             int count = createFreeAgentOffers(player, world, newYear, value);
             lines.add(Messages.get("contract.news.freeAgency", count));
         }
 
-        if (service >= 2 && service < Payroll.FREE_AGENCY_SERVICE && value >= ContractRules.EXTENSION_MIN_OVR
+        if (service >= 2 && service < freeAgencyService(player) && value >= ContractRules.EXTENSION_MIN_OVR
                 && dice.nextDouble() < ReputationRules.extensionChance(ContractRules.EXTENSION_CHANCE, player.getReputation())) {
-            int years = ContractRules.extensionYears(service);
-            long salary = ContractRules.extensionSalary(value);
+            int years = ContractRules.extensionYears(payroll(player), service);
+            long salary = ContractRules.extensionSalary(payroll(player), value);
             offerRepository.save(new ContractOffer(player.getId(), newYear, Kind.EXTENSION, player.getTeam(), years,
                     salary, salary));
-            lines.add(Messages.get("contract.news.extension", player.getTeam().getDisplayName(), years, money(salary)));
+            lines.add(Messages.get("contract.news.extension", player.getTeam().getDisplayName(), years, money(player, salary)));
         }
         return lines;
     }
 
     private int createFreeAgentOffers(Player player, LeagueWorld world, int year, double value) {
+        PayrollRules pay = payroll(player);
         Map<Long, Long> payroll = new HashMap<>();
         for (NpcPlayer npc : npcPlayerRepository.findByWorldIdAndStatus(world.getId(), NpcStatus.MLB)) {
             payroll.merge(npc.getTeamId(), npc.getSalary(), Long::sum);
@@ -181,7 +187,7 @@ public class ContractService {
         List<Candidate> squeezed = new ArrayList<>();
         Candidate currentTeam = null;
         for (WorldTeam team : worldTeamRepository.findByWorldIdOrderByIdAsc(world.getId())) {
-            long salary = Math.max(Payroll.MINIMUM_SALARY, ContractRules.round(ContractRules.freeAgentSalary(value,
+            long salary = Math.max(pay.minimumSalary(), pay.round(ContractRules.freeAgentSalary(pay, value,
                     team.getMarket(), dice.nextDouble()) * ReputationRules.freeAgentSalaryFactor(player.getReputation())));
             long room = team.getBudget() - payroll.getOrDefault(team.getTeam().getId(), 0L);
             boolean current = team.getTeam().getId().equals(player.getTeam().getId());
@@ -192,8 +198,8 @@ public class ContractService {
                 candidates.add(candidate);
             } else {
                 // 예산이 빠듯한 구단은 깎은 금액으로 제안 (여유가 아예 없는 구단은 원소속팀일 때만)
-                candidate = new Candidate(team, Math.max(Payroll.MINIMUM_SALARY,
-                        ContractRules.round(salary * SQUEEZED_RATE)), score);
+                candidate = new Candidate(team, Math.max(pay.minimumSalary(),
+                        pay.round(salary * SQUEEZED_RATE)), score);
                 if (room > 0) {
                     squeezed.add(candidate);
                 }
@@ -222,7 +228,7 @@ public class ContractService {
         for (Candidate c : chosen) {
             int years = ContractRules.freeAgentYears(player.getAge(), dice.nextDouble());
             offerRepository.save(new ContractOffer(player.getId(), year, Kind.FREE_AGENCY, c.team().getTeam(), years,
-                    c.salary(), Payroll.marketValue(value)));
+                    c.salary(), pay.marketValue(value)));
             count++;
         }
         if (count == 0) {
@@ -237,7 +243,8 @@ public class ContractService {
 
     /** 협상이 모두 결렬되면 원소속팀이 1년 저가 계약을 제안 (FA 미아 방지) */
     private void fallbackOffer(Player player, int year, double value) {
-        long salary = Math.max(Payroll.MINIMUM_SALARY, ContractRules.round(Payroll.marketValue(value) * FALLBACK_RATE));
+        PayrollRules pay = payroll(player);
+        long salary = Math.max(pay.minimumSalary(), pay.round(pay.marketValue(value) * FALLBACK_RATE));
         offerRepository.save(new ContractOffer(player.getId(), year, Kind.FREE_AGENCY, player.getTeam(), 1, salary, salary));
     }
 
@@ -267,8 +274,8 @@ public class ContractService {
     /** 연봉조정 청문회: 내 요구액 vs 구단 제시액, 적정 연봉에 가까운 쪽으로 결정. 승리하면 평판 −3 (패배는 그대로) */
     @Transactional
     public ContractOffer arbitrate(Long userId, Long playerId, Long offerId, long requested, boolean noTradeClause) {
-        long ask = ContractRules.round(requested);                    // 금액은 $10,000 단위
         Player player = playerService.getOwned(userId, playerId);
+        long ask = payroll(player).round(requested);                  // 금액은 연봉 단위(MLB $10,000)로 반올림
         ContractOffer offer = pendingOffer(playerId, offerId);
         if (offer.getKind() != Kind.ARBITRATION) {
             throw new InvalidTrainingException(Messages.get("contract.error.hearingOnlyArbitration"));
@@ -278,7 +285,7 @@ public class ContractService {
         }
         long result = ContractRules.hearing(ask, offer.getSalary(), offer.getFairValue());
         boolean won = result == ask && ask > offer.getSalary();
-        sign(player, offer, result, won ? Messages.get("contract.note.hearingWon", money(ask)) : Messages.get("contract.note.hearingLost"),
+        sign(player, offer, result, won ? Messages.get("contract.note.hearingWon", money(player, ask)) : Messages.get("contract.note.hearingLost"),
                 noTradeClause);
         if (won) {
             reputationService.change(player, offer.getSeasonYear(), ReputationRules.ARBITRATION_WON, Messages.get("reputation.reason.hearingWon"));
@@ -294,14 +301,14 @@ public class ContractService {
     /** FA 역제안: 요구액이 오퍼보다 높을수록(평판이 낮을수록) 구단이 협상을 접을 확률이 커진다. 결렬되면 평판 −5 */
     @Transactional
     public ContractOffer counter(Long userId, Long playerId, Long offerId, long requested, boolean noTradeClause) {
-        long ask = ContractRules.round(requested);                    // 금액은 $10,000 단위
         Player player = playerService.getOwned(userId, playerId);
+        long ask = payroll(player).round(requested);                  // 금액은 연봉 단위(MLB $10,000)로 반올림
         ContractOffer offer = pendingOffer(playerId, offerId);
         if (offer.getKind() != Kind.FREE_AGENCY) {
             throw new InvalidTrainingException(Messages.get("contract.error.counterOnlyFa"));
         }
         if (dice.nextDouble() < ContractRules.counterAcceptance(ask, offer.getSalary(), player.getReputation())) {
-            sign(player, offer, Math.max(ask, offer.getSalary()), Messages.get("contract.note.counterAccepted", money(Math.max(ask, offer.getSalary()))),
+            sign(player, offer, Math.max(ask, offer.getSalary()), Messages.get("contract.note.counterAccepted", money(player, Math.max(ask, offer.getSalary()))),
                     noTradeClause);
         } else {
             int lost = reputationService.change(player, offer.getSeasonYear(), ReputationRules.COUNTER_REJECTED,
@@ -378,7 +385,22 @@ public class ContractService {
         return offer;
     }
 
-    static String money(long value) {
-        return "$" + NumberFormat.getIntegerInstance(Locale.US).format(value);
+    /** 선수 모드의 연봉 규칙 */
+    private static PayrollRules payroll(Player player) {
+        return LeagueRulesets.of(player).payroll();
+    }
+
+    /** 학력별 FA 자격 연수 (KBO 대졸은 1년 빠름) */
+    private static int freeAgencyService(Player player) {
+        return payroll(player).freeAgencyService(player.getEducation() == Education.COLLEGE);
+    }
+
+    private static String money(Player player, long value) {
+        return money(player.getLeagueMode(), value);
+    }
+
+    /** 모드 통화로 금액 표시 */
+    static String money(LeagueMode mode, long value) {
+        return LeagueRulesets.of(mode).payroll().format(value);
     }
 }

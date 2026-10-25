@@ -63,6 +63,12 @@ public final class AdvancedStats {
     }
 
     public static Hitter hitter(BattingLine b, FieldingLine f, Position position, LeagueAverages league) {
+        return hitter(b, f, position, league, SEASON_GAMES);
+    }
+
+    /** @param seasonGames 포지션 보정 기준 시즌 경기 수 (모드별: MLB 162) */
+    public static Hitter hitter(BattingLine b, FieldingLine f, Position position, LeagueAverages league,
+                                double seasonGames) {
         int pa = b.plateAppearances;
         double iso = b.getSlg() - b.getAverage();
         int ballsInPlay = b.atBats - b.strikeouts - b.homeRuns + b.sacFlies;
@@ -80,7 +86,7 @@ public final class AdvancedStats {
         double opsPlus = 100 * (b.getObp() / league.obp() + b.getSlg() / league.slg() - 1);
         double baserunning = b.stolenBases * STOLEN_BASE_RUNS + b.caughtStealing * CAUGHT_STEALING_RUNS;
         double fielding = f == null ? 0 : f.getRunsSaved();
-        double positional = positionalAdjustment(position) * b.games / SEASON_GAMES;
+        double positional = positionalAdjustment(position) * b.games / seasonGames;
         double replacement = REPLACEMENT_RUNS_PER_600_PA * pa / 600.0;
         double war = (battingRuns + baserunning + fielding + positional + replacement) / RUNS_PER_WIN;
         return new Hitter(iso, babip, walkRate, strikeoutRate, woba, wrcPlus, opsPlus, war);

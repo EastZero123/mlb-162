@@ -4,10 +4,13 @@ import com.mlbgame.auth.AuthUser;
 import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
 import com.mlbgame.contract.ContractService;
+import com.mlbgame.league.LeagueMode;
+import com.mlbgame.league.mode.ModeCookie;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
 import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.PlayerSeasonRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,8 +49,9 @@ public class HomeController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(@AuthenticationPrincipal AuthUser authUser, Model model) {
-        List<Player> players = playerService.listActive(authUser.getId());
+    public String dashboard(@AuthenticationPrincipal AuthUser authUser, HttpServletRequest request, Model model) {
+        LeagueMode mode = ModeCookie.read(request);                   // 상단 탭 — 슬롯·목록은 모드별
+        List<Player> players = playerService.listActive(authUser.getId(), mode);
         // 카드 요약: 가장 최근 시즌 진행 상황, 결정할 계약 제안
         Map<Long, PlayerSeason> seasons = new HashMap<>();
         Set<Long> pendingContracts = new HashSet<>();
@@ -65,7 +69,7 @@ public class HomeController {
         model.addAttribute("seasons", seasons);
         model.addAttribute("pendingContracts", pendingContracts);
         model.addAttribute("emptySlots", Math.max(0, balance.maxActivePlayers() - players.size()));
-        model.addAttribute("retiredPlayers", playerService.listRetired(authUser.getId()));
+        model.addAttribute("retiredPlayers", playerService.listRetired(authUser.getId(), mode));
         return "dashboard";
     }
 }

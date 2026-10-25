@@ -12,7 +12,7 @@
         <span th:text="${@fmt.teamName(player.team, season.leagueLevel)}">팀</span> ·
         <span th:text="#{common.seriesCount(${season.seriesPlayed})}">진행</span> ·
         <th:block th:text="#{stats.team}">팀</th:block> <span th:text="#{common.winsLosses(${season.teamWins}, ${season.teamLosses})}">0승 0패</span> ·
-        <th:block th:text="#{stats.careerEarnings}">커리어 수령액</th:block> <strong th:text="${@fmt.money(careerEarnings)}">$0</strong>
+        <th:block th:text="#{stats.careerEarnings}">커리어 수령액</th:block> <strong th:text="${@fmt.money(careerEarnings, player.leagueMode)}">$0</strong>
     </p>
 
     <!-- 이번 시즌 기록: 레벨·구단별 (커리어 화면과 같은 기준 — 같은 레벨·구단은 한 줄, 메이저에서 두 팀 이상이면 합계) -->
@@ -20,12 +20,12 @@
         <h2 class="section-title" th:text="${player.pitcher} ? #{stats.pitching} : #{stats.batting}">타격</h2>
         <p class="muted small" th:if="${splits.empty}" th:text="#{common.noRecords}">아직 출전 기록이 없습니다.</p>
         <th:block th:unless="${#lists.isEmpty(splits.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <th:block th:if="${player.pitcher}"><div th:replace="~{fragments/records :: pitching(${splits.mlb()}, false)}"></div></th:block>
             <th:block th:unless="${player.pitcher}"><div th:replace="~{fragments/records :: batting(${splits.mlb()}, false)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(splits.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <th:block th:if="${player.pitcher}"><div th:replace="~{fragments/records :: pitching(${splits.minors()}, false)}"></div></th:block>
             <th:block th:unless="${player.pitcher}"><div th:replace="~{fragments/records :: batting(${splits.minors()}, false)}"></div></th:block>
         </th:block>
@@ -35,12 +35,12 @@
     <section class="card section" th:unless="${splits.empty}">
         <h2 class="section-title" th:text="#{records.detail}">세부 지표</h2>
         <th:block th:unless="${#lists.isEmpty(detail.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <th:block th:if="${player.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${detail.mlb()}, false)}"></div></th:block>
             <th:block th:unless="${player.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${detail.mlb()}, false)}"></div></th:block>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(detail.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <th:block th:if="${player.pitcher}"><div th:replace="~{fragments/records :: detailPitching(${detail.minors()}, false)}"></div></th:block>
             <th:block th:unless="${player.pitcher}"><div th:replace="~{fragments/records :: detailHitting(${detail.minors()}, false)}"></div></th:block>
         </th:block>
@@ -51,11 +51,11 @@
     <section class="card section" th:unless="${player.pitcher or splits.empty}">
         <h2 class="section-title" th:text="#{stats.fielding}">수비</h2>
         <th:block th:unless="${#lists.isEmpty(splits.mlb())}">
-            <h3 class="sub-title" th:text="#{common.major}">메이저리그</h3>
+            <h3 class="sub-title" th:text="${terms.top}">메이저리그</h3>
             <div th:replace="~{fragments/records :: fielding(${splits.mlb()}, false, ${player.position.name() == 'C'})}"></div>
         </th:block>
         <th:block th:unless="${#lists.isEmpty(splits.minors())}">
-            <h3 class="sub-title" th:text="#{common.minor}">마이너리그</h3>
+            <h3 class="sub-title" th:text="${terms.minor}">마이너리그</h3>
             <div th:replace="~{fragments/records :: fielding(${splits.minors()}, false, ${player.position.name() == 'C'})}"></div>
         </th:block>
     </section>
@@ -91,7 +91,7 @@
             <li th:each="aw : ${awards}">
                 <span>🏆</span>
                 <strong th:text="${aw.title}">2026 MVP</strong>
-                <small class="muted" th:text="#{stats.awardReward(${aw.points}, ${@fmt.money(aw.bonus)})}">+5</small>
+                <small class="muted" th:text="#{stats.awardReward(${aw.points}, ${@fmt.money(aw.bonus, player.leagueMode)})}">+5</small>
             </li>
         </ul>
     </section>

@@ -10,8 +10,10 @@ public enum Market {
     SMALL("스몰마켓", 100_000_000L, -2);
 
     /** 실제 시장 규모를 흉내 낸 기본 배정 */
-    static final Set<String> BIG_MARKET_TEAMS = Set.of("NYY", "LAD", "NYM", "BOS", "PHI", "CHC", "SF", "LAA");
-    static final Set<String> SMALL_MARKET_TEAMS = Set.of("TB", "ATH", "MIA", "PIT", "KC", "CLE", "MIL", "CIN");
+    static final Set<String> BIG_MARKET_TEAMS = Set.of("NYY", "LAD", "NYM", "BOS", "PHI", "CHC", "SF", "LAA",
+            "LG", "SS", "SSG");                                    // KBO: 모기업 규모가 큰 구단
+    static final Set<String> SMALL_MARKET_TEAMS = Set.of("TB", "ATH", "MIA", "PIT", "KC", "CLE", "MIL", "CIN",
+            "KW", "NC");                                           // KBO: 모기업 없음·지원 규모 작음
 
     private final String label;
     private final long baseBudget;

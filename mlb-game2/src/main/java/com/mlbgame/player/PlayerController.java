@@ -3,6 +3,10 @@ package com.mlbgame.player;
 import com.mlbgame.auth.AuthUser;
 import com.mlbgame.common.Messages;
 import com.mlbgame.config.GameBalance;
+import com.mlbgame.league.LeagueMode;
+import com.mlbgame.league.mode.LeagueRulesets;
+import com.mlbgame.league.mode.ModeCookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,11 +49,14 @@ public class PlayerController {
         model.addAttribute("pitchTypes", Arrays.stream(PitchType.values()).filter(PitchType::isSelectable).toList());
     }
 
+    /** 선수는 지금 보고 있는 모드(상단 탭)로 만든다 */
     @GetMapping("/new")
     public String createPage(@AuthenticationPrincipal AuthUser authUser, @ModelAttribute("form") PlayerCreateForm form,
-                             RedirectAttributes redirectAttributes) {
-        if (!playerService.hasFreeSlot(authUser.getId())) {
-            redirectAttributes.addFlashAttribute("errorMessage", Messages.get("create.error.slotsFull"));
+                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        LeagueMode mode = ModeCookie.read(request);
+        String blocked = creationBlocked(authUser, mode);
+        if (blocked != null) {
+            redirectAttributes.addFlashAttribute("errorMessage", blocked);
             return "redirect:/dashboard";
         }
         return "players/new";
@@ -58,12 +65,17 @@ public class PlayerController {
     @PostMapping
     public String create(@AuthenticationPrincipal AuthUser authUser,
                          @Valid @ModelAttribute("form") PlayerCreateForm form, BindingResult bindingResult,
-                         Model model) {
+                         HttpServletRequest request, Model model, RedirectAttributes redirectAttributes) {
+        LeagueMode mode = ModeCookie.read(request);
+        if (!LeagueRulesets.isAvailable(mode)) {
+            redirectAttributes.addFlashAttribute("errorMessage", creationBlocked(authUser, mode));
+            return "redirect:/dashboard";
+        }
         if (bindingResult.hasErrors()) {
             return "players/new";
         }
         try {
-            Player player = playerService.create(authUser.getId(), form);
+            Player player = playerService.create(authUser.getId(), form, mode);
             return "redirect:/players/" + player.getId() + "/combine";
         } catch (InvalidAllocationException e) {
             bindingResult.rejectValue("allocation", "invalid", e.getMessage());
@@ -72,6 +84,17 @@ public class PlayerController {
             model.addAttribute("errorMessage", e.getMessage());
             return "players/new";
         }
+    }
+
+    /** 이 모드로 선수를 만들 수 없는 이유 (만들 수 있으면 null) */
+    private String creationBlocked(AuthUser authUser, LeagueMode mode) {
+        if (!LeagueRulesets.isAvailable(mode)) {
+            return Messages.get("mode.notReady", mode.getLabel());
+        }
+        if (!playerService.hasFreeSlot(authUser.getId(), mode)) {
+            return Messages.get("create.error.slotsFullMode", mode.getLabel());
+        }
+        return null;
     }
 
     @GetMapping("/{playerId}")

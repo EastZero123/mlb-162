@@ -1,6 +1,7 @@
 package com.mlbgame.league.stats;
 
-import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
 import com.mlbgame.league.standings.StandingsGenerator;
@@ -63,7 +64,9 @@ public class LeagueStatsService {
         Map<Long, Team> teams = teamRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(Team::getId, Function.identity()));
         Map<Long, Double> winPct = new HashMap<>();
-        teamStrengthService.ratingsByTeam(world.getId(), LeagueLevel.MLB)
+        LeagueRuleset rules = LeagueRulesets.of(world);
+        NpcStatGenerator generator = this.generator.forMode(world.getLeagueMode());
+        teamStrengthService.ratingsByTeam(world.getId(), rules.topLevel())
                 .forEach((id, r) -> winPct.put(id, StandingsGenerator.winProbability(r.overall(), 65)));
         Map<Long, Integer> rotationSlots = rotationSlots(npcs);
 
@@ -73,13 +76,14 @@ public class LeagueStatsService {
             FieldingLine fielding = new FieldingLine();
             PitchingLine pitching = new PitchingLine();
             for (int month : months) {
+                int games = rules.gamesInMonth(month - FIRST_MONTH + 1);
                 SplittableRandom rng = new SplittableRandom(seed(world.getSeed(), year, month, npc.getId()));
                 if (npc.getPosition().isPitcher()) {
                     pitching.add(generator.pitcher(npc.snapshot(), npc.getRosterRole(),
-                            rotationSlots.getOrDefault(npc.getId(), 0), GAMES_PER_MONTH,
+                            rotationSlots.getOrDefault(npc.getId(), 0), games,
                             winPct.getOrDefault(npc.getTeamId(), 0.5), rng));
                 } else {
-                    HitterLine line = generator.hitter(npc.snapshot(), npc.getRosterRole(), GAMES_PER_MONTH, rng);
+                    HitterLine line = generator.hitter(npc.snapshot(), npc.getRosterRole(), games, rng);
                     batting.add(line.batting());
                     fielding.add(line.fielding());
                 }

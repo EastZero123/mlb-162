@@ -1,6 +1,7 @@
 package com.mlbgame.simulation.balance;
 
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Hand;
 import com.mlbgame.player.PitchType;
@@ -26,7 +27,7 @@ import java.util.SplittableRandom;
 import java.util.function.ToDoubleFunction;
 
 /**
- * 시즌(54시리즈) 반복 시뮬레이션 도구. 밸런스 검증 테스트에서만 쓴다.
+ * 시즌(54시리즈) 반복 시뮬레이션 도구. 밸런스 검증 테스트에서만 쓴다. 레벨의 모드로 편성(시리즈별 경기 수)·리그 평균 기록이 정해진다.
  * 상대 팀 전력은 시리즈마다 레벨 평균 ±3 에서 고르고, 부상 결장도 반영한다. 능력치는 시즌 내내 고정(훈련 없음).
  */
 final class SeasonHarness {
@@ -79,7 +80,7 @@ final class SeasonHarness {
             }
             SeriesResult r = simulator.simulate(new SeriesInput(seriesSeed, level, s % 2 == 0,
                     TeamRatings.uniform(level.getAverageRating()), TeamRatings.uniform(opponent),
-                    SeriesInput.DEFAULT_GAMES, player, fatigue, usage, false));
+                    LeagueRulesets.of(level).gamesInSeries(s + 1), player, fatigue, usage, false));   // KBO 37번째부터 2연전
             wins += r.wins();
             if (pitcher) {
                 pitching.add(r.pitching());

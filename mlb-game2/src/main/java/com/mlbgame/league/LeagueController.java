@@ -1,6 +1,8 @@
 package com.mlbgame.league;
 
 import com.mlbgame.auth.AuthUser;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
 import com.mlbgame.league.stats.Leaderboard;
@@ -15,7 +17,6 @@ import com.mlbgame.player.PlayerService;
 import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.SeasonService;
 import com.mlbgame.season.SeasonService.MlbSeason;
-import com.mlbgame.season.schedule.ScheduledSeries;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-/** 메이저리그 순위표 + 리더보드 (내 선수가 메이저에서 뛰었으면 리더보드에 포함) */
+/** 최상위 레벨 순위표 + 리더보드 (내 선수가 최상위 레벨에서 뛰었으면 리더보드에 포함) */
 @Controller
 public class LeagueController {
 
@@ -51,13 +52,14 @@ public class LeagueController {
         Player player = playerService.getOwned(authUser.getId(), playerId);
         PlayerSeason season = seasonService.currentSeason(authUser.getId(), playerId);
         LeagueWorld world = leagueWorldService.getOrCreate(playerId);
+        LeagueRuleset rules = LeagueRulesets.of(world);
         MlbSeason mlb = seasonService.mlbSeason(authUser.getId(), playerId);
 
         StandingsTable table = standingsService.standings(world, season.getSeasonYear(), season.getSeriesPlayed(),
                 player.getTeam().getId(), mlb.teamResults());
 
-        int completedMonths = season.getSeriesPlayed() / ScheduledSeries.SERIES_PER_MONTH;
-        int teamGames = completedMonths * LeagueStatsService.GAMES_PER_MONTH;
+        int completedMonths = season.getSeriesPlayed() / rules.seriesPerMonth();
+        int teamGames = rules.gamesBetween(1, completedMonths * rules.seriesPerMonth());
         List<Candidate> candidates = new ArrayList<>();
         for (PlayerLine line : leagueStatsService.lines(world, season.getSeasonYear(),
                 LeagueStatsService.monthsThrough(completedMonths))) {
@@ -76,8 +78,8 @@ public class LeagueController {
         model.addAttribute("player", player);
         model.addAttribute("season", season);
         model.addAttribute("table", table);
-        model.addAttribute("leagues", StandingsTable.LEAGUES);
-        model.addAttribute("divisions", StandingsTable.DIVISIONS);
+        model.addAttribute("leagues", rules.leagues());
+        model.addAttribute("divisions", rules.divisions());
         model.addAttribute("myTeamId", player.getTeam().getId());
         model.addAttribute("leaders", leaders);
         model.addAttribute("completedMonths", completedMonths);

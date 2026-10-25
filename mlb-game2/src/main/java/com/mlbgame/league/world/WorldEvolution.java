@@ -51,6 +51,12 @@ public final class WorldEvolution {
      */
     public static Report evolve(long seed, Long worldId, List<WorldTeam> teams, List<NpcPlayer> npcs,
                                 Map<Long, Double> winPct, List<NpcPlayer> created) {
+        return evolve(seed, worldId, teams, npcs, winPct, created, PayrollRules.MLB);
+    }
+
+    /** @param payroll 모드별 연봉·예산 수치 */
+    public static Report evolve(long seed, Long worldId, List<WorldTeam> teams, List<NpcPlayer> npcs,
+                                Map<Long, Double> winPct, List<NpcPlayer> created, PayrollRules rules) {
         RandomGenerator rng = new SplittableRandom(seed);
         int retired = 0;
         int freeAgents = 0;
@@ -70,8 +76,8 @@ public final class WorldEvolution {
             }
             npc.passContractYear();
             if (npc.getContractYears() == 0) {
-                if (npc.getServiceYears() < Payroll.FREE_AGENCY_SERVICE) {
-                    npc.renew(Payroll.salaryByService(npc.getServiceYears(), npc.getOverall()));
+                if (npc.getServiceYears() < rules.freeAgencyService()) {
+                    npc.renew(rules.salaryByService(npc.getServiceYears(), npc.getOverall()));
                 } else {
                     npc.becomeFreeAgent();
                     freeAgents++;
@@ -81,15 +87,15 @@ public final class WorldEvolution {
 
         // 4. 예산·팜
         Map<Long, WorldTeam> teamById = teams.stream().collect(Collectors.toMap(t -> t.getTeam().getId(), t -> t));
-        updateFinances(teams, npcs, winPct, rng);
+        updateFinances(teams, npcs, winPct, rng, rules);
 
         // 5. FA 시장
-        List<Signing> signings = freeAgency(npcs, teamById, rng);
+        List<Signing> signings = freeAgency(npcs, teamById, rng, rules);
 
         // 6. 로스터 재편 + 콜업
         int callUps = 0;
         for (WorldTeam team : teams) {
-            callUps += rebuildRoster(worldId, team, npcs, created, rng);
+            callUps += rebuildRoster(worldId, team, npcs, created, rng, rules);
         }
         signings.sort(Comparator.comparingLong(Signing::salary).reversed());
         return new Report(retired, freeAgents, signings, callUps);
@@ -146,19 +152,24 @@ public final class WorldEvolution {
     // ------------------------------------------------------------ 재정
 
     static void updateFinances(List<WorldTeam> teams, List<NpcPlayer> npcs, Map<Long, Double> winPct, RandomGenerator rng) {
+        updateFinances(teams, npcs, winPct, rng, PayrollRules.MLB);
+    }
+
+    static void updateFinances(List<WorldTeam> teams, List<NpcPlayer> npcs, Map<Long, Double> winPct, RandomGenerator rng,
+                               PayrollRules rules) {
         Map<Long, Long> payroll = payrolls(npcs);
         List<WorldTeam> draftOrder = new ArrayList<>(teams);
         draftOrder.sort(Comparator.comparingDouble(t -> winPct.getOrDefault(t.getTeam().getId(), 0.5)));
         for (int rank = 0; rank < draftOrder.size(); rank++) {
             WorldTeam team = draftOrder.get(rank);
             double pct = winPct.getOrDefault(team.getTeam().getId(), 0.5);
-            double budget = team.getMarket().getBaseBudget() * team.getSpendingPercent() / 100.0 * (1 + (pct - 0.5) * 0.4);
-            if (payroll.getOrDefault(team.getTeam().getId(), 0L) > Payroll.LUXURY_TAX_THRESHOLD) {
+            double budget = rules.baseBudget(team.getMarket()) * team.getSpendingPercent() / 100.0 * (1 + (pct - 0.5) * 0.4);
+            if (payroll.getOrDefault(team.getTeam().getId(), 0L) > rules.luxuryTaxThreshold()) {
                 budget *= 0.95;                                      // 사치세 부담
             }
             double draftBonus = 6.0 * (draftOrder.size() - 1 - rank) / (draftOrder.size() - 1);  // 꼴찌 +6
             int farm = (int) Math.round(team.getFarmScore() * 0.85 + 9 + draftBonus + rng.nextGaussian() * 3);
-            team.updateFinances(Math.round(budget / 1_000_000) * 1_000_000, Math.max(20, Math.min(95, farm)));
+            team.updateFinances(Math.round(budget / rules.budgetUnit()) * rules.budgetUnit(), Math.max(20, Math.min(95, farm)));
         }
     }
 
@@ -174,7 +185,8 @@ public final class WorldEvolution {
 
     // ------------------------------------------------------------ FA
 
-    static List<Signing> freeAgency(List<NpcPlayer> npcs, Map<Long, WorldTeam> teams, RandomGenerator rng) {
+    static List<Signing> freeAgency(List<NpcPlayer> npcs, Map<Long, WorldTeam> teams, RandomGenerator rng,
+                                    PayrollRules rules) {
         Map<Long, Long> payroll = payrolls(npcs);
         List<NpcPlayer> pool = npcs.stream()
                 .filter(n -> n.getStatus() == NpcStatus.FA)
@@ -186,7 +198,7 @@ public final class WorldEvolution {
             double bestScore = 0;
             long bestSalary = 0;
             for (WorldTeam team : teams.values()) {
-                long salary = askingSalary(fa, team.getMarket(), rng);
+                long salary = askingSalary(fa, team.getMarket(), rng, rules);
                 long room = team.getBudget() - payroll.getOrDefault(team.getTeam().getId(), 0L);
                 if (room < salary || !improves(team.getTeam().getId(), fa, npcs)) {
                     continue;
@@ -208,14 +220,14 @@ public final class WorldEvolution {
         return signings;
     }
 
-    static long askingSalary(NpcPlayer fa, Market market, RandomGenerator rng) {
+    static long askingSalary(NpcPlayer fa, Market market, RandomGenerator rng, PayrollRules rules) {
         double factor = switch (market) {
             case BIG -> 1.1;
             case MID -> 1.0;
             case SMALL -> 0.9;
         };
-        double salary = Payroll.marketValue(fa.getOverall()) * (0.9 + 0.3 * rng.nextDouble()) * factor;
-        return Math.max(Payroll.MINIMUM_SALARY, Math.round(salary / 10_000) * 10_000);
+        double salary = rules.marketValue(fa.getOverall()) * (0.9 + 0.3 * rng.nextDouble()) * factor;
+        return Math.max(rules.minimumSalary(), rules.round(salary));
     }
 
     /** 같은 역할군에서 가장 약한 1군 선수보다 나으면 보강 */
@@ -236,7 +248,7 @@ public final class WorldEvolution {
 
     /** 구단 26명 재배치. 모자란 자리는 유망주 콜업. 반환: 콜업 수 */
     static int rebuildRoster(Long worldId, WorldTeam team, List<NpcPlayer> npcs, List<NpcPlayer> created,
-                             RandomGenerator rng) {
+                             RandomGenerator rng, PayrollRules rules) {
         Long teamId = team.getTeam().getId();
         List<NpcPlayer> mine = npcs.stream()
                 .filter(n -> teamId.equals(n.getTeamId())
@@ -251,7 +263,7 @@ public final class WorldEvolution {
             NpcPlayer best = hitters.stream().filter(n -> n.getPosition() == required && !lineup.contains(n)).findFirst()
                     .orElse(null);
             if (best == null) {
-                best = callUp(worldId, team, required, RosterRole.LINEUP, rng);
+                best = callUp(worldId, team, required, RosterRole.LINEUP, rng, rules);
                 created.add(best);
                 callUps++;
             }
@@ -262,7 +274,7 @@ public final class WorldEvolution {
             if (!lineup.contains(h)) lineup.add(h);
         }
         while (lineup.size() < RosterRole.LINEUP.getSlots()) {
-            NpcPlayer p = callUp(worldId, team, Position.OF, RosterRole.LINEUP, rng);
+            NpcPlayer p = callUp(worldId, team, Position.OF, RosterRole.LINEUP, rng, rules);
             created.add(p);
             lineup.add(p);
             callUps++;
@@ -270,7 +282,7 @@ public final class WorldEvolution {
         List<NpcPlayer> bench = new ArrayList<>(hitters.stream().filter(h -> !lineup.contains(h))
                 .limit(RosterRole.BENCH.getSlots()).toList());
         while (bench.size() < RosterRole.BENCH.getSlots()) {
-            NpcPlayer p = callUp(worldId, team, bench.isEmpty() ? Position.C : Position.B2, RosterRole.BENCH, rng);
+            NpcPlayer p = callUp(worldId, team, bench.isEmpty() ? Position.C : Position.B2, RosterRole.BENCH, rng, rules);
             created.add(p);
             bench.add(p);
             callUps++;
@@ -281,7 +293,7 @@ public final class WorldEvolution {
         List<NpcPlayer> rotation = new ArrayList<>(pitchers.stream().filter(n -> n.getPosition() == Position.SP)
                 .limit(RosterRole.ROTATION.getSlots()).toList());
         while (rotation.size() < RosterRole.ROTATION.getSlots()) {
-            NpcPlayer p = callUp(worldId, team, Position.SP, RosterRole.ROTATION, rng);
+            NpcPlayer p = callUp(worldId, team, Position.SP, RosterRole.ROTATION, rng, rules);
             created.add(p);
             rotation.add(p);
             callUps++;
@@ -290,14 +302,14 @@ public final class WorldEvolution {
         NpcPlayer closer = relievers.stream().filter(n -> n.getPosition() == Position.CP).findFirst()
                 .orElse(relievers.isEmpty() ? null : relievers.get(0));
         if (closer == null) {
-            closer = callUp(worldId, team, Position.CP, RosterRole.CLOSER, rng);
+            closer = callUp(worldId, team, Position.CP, RosterRole.CLOSER, rng, rules);
             created.add(closer);
             callUps++;
         }
         relievers.remove(closer);
         List<NpcPlayer> bullpen = new ArrayList<>(relievers.stream().limit(RosterRole.BULLPEN.getSlots()).toList());
         while (bullpen.size() < RosterRole.BULLPEN.getSlots()) {
-            NpcPlayer p = callUp(worldId, team, Position.RP, RosterRole.BULLPEN, rng);
+            NpcPlayer p = callUp(worldId, team, Position.RP, RosterRole.BULLPEN, rng, rules);
             created.add(p);
             bullpen.add(p);
             callUps++;
@@ -327,7 +339,8 @@ public final class WorldEvolution {
     static final double STAR_PROSPECT_CHANCE = 0.10;
 
     /** 팜 점수로 유망주 생성: OVR = 56 + (팜 − 60)/6 ± 4, 21~24세, 잠재력 = OVR + 5~17 (특급 유망주는 +8~15 더) */
-    static NpcPlayer callUp(Long worldId, WorldTeam team, Position position, RosterRole role, RandomGenerator rng) {
+    static NpcPlayer callUp(Long worldId, WorldTeam team, Position position, RosterRole role, RandomGenerator rng,
+                            PayrollRules rules) {
         double target = 56 + (team.getFarmScore() - 60) / 6.0 + rng.nextGaussian() * 4;
         int overall = (int) Math.round(Math.max(40, Math.min(80, target)));
         int[] attributes = WorldGenerator.attributes(rng, overall);
@@ -337,9 +350,9 @@ public final class WorldEvolution {
         if (rng.nextDouble() < STAR_PROSPECT_CHANCE) {
             potential += 8 + rng.nextInt(8);
         }
-        return NpcPlayer.create(worldId, team.getTeam().getId(), NameGenerator.next(rng), position, bats, throwsHand,
+        return NpcPlayer.create(worldId, team.getTeam().getId(), NameGenerator.next(rng, team.getTeam().getLeagueMode()), position, bats, throwsHand,
                 21 + rng.nextInt(4), Math.min(99, potential), attributes, role,
-                Payroll.MINIMUM_SALARY, 1, 0);
+                rules.minimumSalary(), 1, 0);
     }
 
     private static List<NpcPlayer> sortedByOverall(List<NpcPlayer> players) {

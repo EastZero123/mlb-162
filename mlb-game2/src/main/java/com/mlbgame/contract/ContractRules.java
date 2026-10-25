@@ -1,7 +1,7 @@
 package com.mlbgame.contract;
 
 import com.mlbgame.league.world.Market;
-import com.mlbgame.league.world.Payroll;
+import com.mlbgame.league.world.PayrollRules;
 import com.mlbgame.reputation.ReputationRules;
 
 /**
@@ -25,13 +25,17 @@ public final class ContractRules {
     public static final double EXTENSION_CHANCE = 0.35;
     public static final int EXTENSION_MIN_OVR = 68;
     public static final double EXTENSION_DISCOUNT = 0.75;
-    static final double[] ARBITRATION_SHARE = {0.4, 0.6, 0.8};
 
     private ContractRules() {
     }
 
     public static int serviceYears(int totalMlbSeries) {
-        return totalMlbSeries / SERIES_PER_SERVICE_YEAR;
+        return serviceYears(totalMlbSeries, SERIES_PER_SERVICE_YEAR);
+    }
+
+    /** @param seriesPerServiceYear 최상위 레벨 시리즈 몇 개가 서비스 1년인지 (모드별) */
+    public static int serviceYears(int totalTopLevelSeries, int seriesPerServiceYear) {
+        return totalTopLevelSeries / seriesPerServiceYear;
     }
 
     public static double valueOverall(double overall, int lastSeasonAwardPoints) {
@@ -39,12 +43,21 @@ public final class ContractRules {
     }
 
     public static long fairArbitration(int serviceYears, double valueOverall) {
-        int index = Math.max(0, Math.min(2, serviceYears - Payroll.ARBITRATION_START));
-        return round(Math.max(Payroll.MINIMUM_SALARY, Payroll.marketValue(valueOverall) * ARBITRATION_SHARE[index]));
+        return fairArbitration(PayrollRules.MLB, serviceYears, valueOverall);
+    }
+
+    public static long fairArbitration(PayrollRules payroll, int serviceYears, double valueOverall) {
+        double[] share = payroll.arbitrationShare();
+        int index = Math.max(0, Math.min(share.length - 1, serviceYears - payroll.arbitrationStart()));
+        return payroll.round(Math.max(payroll.minimumSalary(), payroll.marketValue(valueOverall) * share[index]));
     }
 
     public static long arbitrationOffer(long fair) {
-        return Math.max(Payroll.MINIMUM_SALARY, round(fair * ARBITRATION_OFFER_RATE));
+        return arbitrationOffer(PayrollRules.MLB, fair);
+    }
+
+    public static long arbitrationOffer(PayrollRules payroll, long fair) {
+        return Math.max(payroll.minimumSalary(), payroll.round(fair * ARBITRATION_OFFER_RATE));
     }
 
     /** 청문회: 적정 연봉에 더 가까운 쪽 (같으면 구단 제시액) */
@@ -53,21 +66,34 @@ public final class ContractRules {
     }
 
     public static int extensionYears(int serviceYears) {
-        return Math.max(3, Math.min(6, Payroll.FREE_AGENCY_SERVICE - serviceYears + 2));
+        return extensionYears(PayrollRules.MLB, serviceYears);
+    }
+
+    public static int extensionYears(PayrollRules payroll, int serviceYears) {
+        return Math.max(3, Math.min(6, payroll.freeAgencyService() - serviceYears + 2));
     }
 
     public static long extensionSalary(double valueOverall) {
-        return round(Math.max(Payroll.MINIMUM_SALARY, Payroll.marketValue(valueOverall) * EXTENSION_DISCOUNT));
+        return extensionSalary(PayrollRules.MLB, valueOverall);
+    }
+
+    public static long extensionSalary(PayrollRules payroll, double valueOverall) {
+        return payroll.round(Math.max(payroll.minimumSalary(), payroll.marketValue(valueOverall) * EXTENSION_DISCOUNT));
     }
 
     /** FA 오퍼 연봉: 시장가 × (0.85~1.2 운) × 재정 규모 */
     public static long freeAgentSalary(double valueOverall, Market market, double luck) {
+        return freeAgentSalary(PayrollRules.MLB, valueOverall, market, luck);
+    }
+
+    public static long freeAgentSalary(PayrollRules payroll, double valueOverall, Market market, double luck) {
         double factor = switch (market) {
             case BIG -> 1.1;
             case MID -> 1.0;
             case SMALL -> 0.9;
         };
-        return round(Math.max(Payroll.MINIMUM_SALARY, Payroll.marketValue(valueOverall) * (0.85 + 0.35 * luck) * factor));
+        return payroll.round(Math.max(payroll.minimumSalary(),
+                payroll.marketValue(valueOverall) * (0.85 + 0.35 * luck) * factor));
     }
 
     public static int freeAgentYears(int age, double luck) {
@@ -91,6 +117,6 @@ public final class ContractRules {
     }
 
     static long round(double value) {
-        return Math.round(value / 10_000) * 10_000;
+        return PayrollRules.MLB.round(value);
     }
 }

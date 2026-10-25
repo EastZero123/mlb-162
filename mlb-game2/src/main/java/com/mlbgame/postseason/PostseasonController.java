@@ -6,6 +6,7 @@ import com.mlbgame.award.AwardService;
 import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
 import com.mlbgame.season.SeasonProgressException;
@@ -51,20 +52,21 @@ public class PostseasonController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/players/" + playerId + "/season";
         }
+        PostseasonFormat format = LeagueRulesets.of(player).postseason();
         Map<Long, Team> teams = teamRepository.findAllByOrderByIdAsc().stream()
                 .collect(Collectors.toMap(Team::getId, Function.identity()));
         List<Award> postseasonAwards = awardService.season(playerId, postseason.getSeasonYear()).stream()
-                .filter(a -> a.getAfterSeries() > 54).toList();
+                .filter(a -> a.getAfterSeries() > LeagueRulesets.of(player).seriesPerSeason()).toList();
 
         model.addAttribute("player", player);
         model.addAttribute("postseason", postseason);
         model.addAttribute("bracket", postseasonService.bracket(postseason));
-        model.addAttribute("rounds", PostseasonRound.values());
+        model.addAttribute("rounds", format.rounds());
         model.addAttribute("teams", teams);
         model.addAttribute("batting", postseasonService.batting(postseason));
         model.addAttribute("pitching", postseasonService.pitching(postseason));
         model.addAttribute("awards", postseasonAwards);
-        model.addAttribute("nextRound", postseason.isDone() ? null : PostseasonRound.of(postseason.getNextRound()));
+        model.addAttribute("nextRound", postseason.isDone() ? null : format.round(postseason.getNextRound()));
         return "postseason/overview";
     }
 

@@ -65,7 +65,7 @@ public class LevelChange extends BaseTimeEntity {
     /** "더블A 승격" / "싱글A 강등" / 메이저면 "메이저리그 콜업!" */
     public String getMessage() {
         if (isPromotion()) {
-            return toLevel == LeagueLevel.MLB ? Messages.get("level.callUp") : Messages.get("level.promoted", toLevel.getLabel());
+            return toLevel.isTop() ? Messages.get("level.callUpTo", toLevel.getLabel()) : Messages.get("level.promoted", toLevel.getLabel());
         }
         return Messages.get("level.demoted", toLevel.getLabel());
     }

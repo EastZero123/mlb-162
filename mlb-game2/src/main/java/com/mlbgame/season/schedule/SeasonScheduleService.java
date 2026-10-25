@@ -3,6 +3,7 @@ package com.mlbgame.season.schedule;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorld;
 import com.mlbgame.league.world.TeamStrengthService;
 import com.mlbgame.simulation.game.TeamRatings;
@@ -28,7 +29,7 @@ public class SeasonScheduleService {
 
     public List<ScheduledSeries> schedule(LeagueWorld world, int year, Team myTeam) {
         long seed = ScheduleGenerator.seed(world.getSeed(), year, myTeam.getId());
-        return ScheduleGenerator.generate(seed, myTeam, teamRepository.findAllByOrderByIdAsc());
+        return LeagueRulesets.of(world).schedule(seed, myTeam, teamRepository.findByLeagueModeOrderByIdAsc(world.getLeagueMode()));
     }
 
     /** 일정과 그 시점의 양 팀 전력을 함께 묶은 매치업 목록 */

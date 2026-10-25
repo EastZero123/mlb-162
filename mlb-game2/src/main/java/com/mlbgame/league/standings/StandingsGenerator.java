@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
+import java.util.function.IntUnaryOperator;
 import java.util.random.RandomGenerator;
 
 /**
@@ -41,10 +42,17 @@ public final class StandingsGenerator {
      */
     public static Map<Long, int[]> simulate(long seed, List<Team> teams, Map<Long, Double> ratings, int seriesCount,
                                             Long actualTeamId, Map<Integer, int[]> actual) {
+        return simulate(seed, teams, ratings, seriesCount, actualTeamId, actual, s -> GAMES_PER_SERIES);
+    }
+
+    /** @param gamesInSeries 시리즈 번호 → 경기 수 (모드별 편성) */
+    public static Map<Long, int[]> simulate(long seed, List<Team> teams, Map<Long, Double> ratings, int seriesCount,
+                                            Long actualTeamId, Map<Integer, int[]> actual, IntUnaryOperator gamesInSeries) {
         Map<Long, int[]> records = new HashMap<>();
         teams.forEach(t -> records.put(t.getId(), new int[2]));
         for (int s = 1; s <= seriesCount; s++) {
             RandomGenerator rng = new SplittableRandom(seed * 31 + s);
+            int games = gamesInSeries.applyAsInt(s);
             List<Long> ids = new ArrayList<>(teams.stream().map(Team::getId).toList());
             for (int i = ids.size() - 1; i > 0; i--) {
                 int j = rng.nextInt(i + 1);
@@ -57,7 +65,7 @@ public final class StandingsGenerator {
                 Long b = ids.get(i + 1);
                 double p = winProbability(ratings.getOrDefault(a, 65.0), ratings.getOrDefault(b, 65.0));
                 int aWins = 0;
-                for (int g = 0; g < GAMES_PER_SERIES; g++) {
+                for (int g = 0; g < games; g++) {
                     if (rng.nextDouble() < p) aWins++;             // 실제 결과로 바꾸더라도 난수는 똑같이 소비
                 }
                 int[] override = actual.get(s);
@@ -67,8 +75,8 @@ public final class StandingsGenerator {
                     aWins = override[1];
                 }
                 records.get(a)[0] += aWins;
-                records.get(a)[1] += GAMES_PER_SERIES - aWins;
-                records.get(b)[0] += GAMES_PER_SERIES - aWins;
+                records.get(a)[1] += games - aWins;
+                records.get(b)[0] += games - aWins;
                 records.get(b)[1] += aWins;
             }
         }

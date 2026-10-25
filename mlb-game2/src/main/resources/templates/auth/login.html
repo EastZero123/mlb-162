@@ -5,7 +5,7 @@
 <main class="auth-wrap">
     <section class="card auth-card">
         <p class="auth-lang"><a th:replace="~{fragments/layout :: langSwitch}"></a></p>
-        <h1 class="auth-title" th:text="'⚾ ' + #{app.name}">⚾ MLB 선수 키우기</h1>
+        <h1 class="auth-title" th:text="'⚾ ' + #{app.name.mode(${currentMode != null ? currentMode.label : 'MLB'})}">⚾ MLB 선수 키우기</h1>
         <p class="auth-sub" th:text="#{login.tagline}">나만의 선수를 드래프트부터 명예의 전당까지</p>
 
         <div class="alert alert-success" th:if="${signupSuccess}" th:text="#{login.signupSuccess}">회원가입이 완료되었습니다. 로그인해 주세요.</div>

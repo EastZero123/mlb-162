@@ -1,6 +1,7 @@
 package com.mlbgame.award;
 
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.RosterRole;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Hand;
@@ -39,8 +40,8 @@ public class MinorLeaguePool {
         RandomGenerator rng = new SplittableRandom(seed);
         List<Double> scores = new ArrayList<>();
         for (int i = 0; i < POOL_SIZE; i++) {
-            HitterLine line = generator.hitter(snapshot(rng, Position.OF, level), RosterRole.LINEUP, teamGames, rng);
-            scores.add(AwardRules.hitter(line.batting(), line.fielding()));
+            HitterLine line = generator.forMode(level.getMode()).hitter(snapshot(rng, Position.OF, level), RosterRole.LINEUP, teamGames, rng);
+            scores.add(LeagueRulesets.of(level).awards().scoring().hitter(line.batting(), line.fielding()));
         }
         return scores;
     }
@@ -51,9 +52,10 @@ public class MinorLeaguePool {
         List<Double> scores = new ArrayList<>();
         for (int i = 0; i < POOL_SIZE; i++) {
             Position position = starter ? Position.SP : Position.CP;
-            PitchingLine line = generator.pitcher(snapshot(rng, position, level),
+            PitchingLine line = generator.forMode(level.getMode()).pitcher(snapshot(rng, position, level),
                     starter ? RosterRole.ROTATION : RosterRole.CLOSER, 1 + i % 5, teamGames, 0.5, rng);
-            scores.add(starter ? AwardRules.starter(line) : AwardRules.reliever(line));
+            AwardRules.Scoring scoring = LeagueRulesets.of(level).awards().scoring();
+            scores.add(starter ? scoring.starter(line) : scoring.reliever(line));
         }
         return scores;
     }

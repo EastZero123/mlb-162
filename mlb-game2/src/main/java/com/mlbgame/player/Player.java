@@ -4,6 +4,7 @@ import com.mlbgame.common.BaseTimeEntity;
 import com.mlbgame.common.Messages;
 import com.mlbgame.contract.ContractType;
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.Team;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -89,6 +90,12 @@ public class Player extends BaseTimeEntity {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
     private PlayerStatus status;
+
+    /** 게임 모드 — 이 선수에게 적용할 리그 규칙 ({@code LeagueRulesets}) */
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "league_mode", nullable = false, length = 5)
+    private LeagueMode leagueMode = LeagueMode.MLB;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -248,7 +255,17 @@ public class Player extends BaseTimeEntity {
                                 Hand throwsHand, Nationality nationality, Education education,
                                 SchoolRegion schoolRegion, int startValue, Map<Attribute, Integer> allocation,
                                 List<PitchType> pitchSelection) {
+        return create(userId, name, uniformNumber, position, bats, throwsHand, nationality, education, schoolRegion,
+                startValue, allocation, pitchSelection, LeagueMode.MLB);
+    }
+
+    /** @param leagueMode 이 선수가 뛸 모드 (이후 바뀌지 않는다) */
+    public static Player create(Long userId, String name, int uniformNumber, Position position, Hand bats,
+                                Hand throwsHand, Nationality nationality, Education education,
+                                SchoolRegion schoolRegion, int startValue, Map<Attribute, Integer> allocation,
+                                List<PitchType> pitchSelection, LeagueMode leagueMode) {
         Player player = new Player();
+        player.leagueMode = leagueMode;
         player.userId = userId;
         player.name = name;
         player.uniformNumber = uniformNumber;
@@ -499,6 +516,10 @@ public class Player extends BaseTimeEntity {
 
     public PlayerStatus getStatus() {
         return status;
+    }
+
+    public LeagueMode getLeagueMode() {
+        return leagueMode;
     }
 
     public LeagueLevel getLeagueLevel() {

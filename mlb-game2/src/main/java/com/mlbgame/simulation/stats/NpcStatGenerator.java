@@ -1,5 +1,6 @@
 package com.mlbgame.simulation.stats;
 
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.world.RosterRole;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Hand;
@@ -10,10 +11,12 @@ import com.mlbgame.simulation.PaResult;
 import com.mlbgame.simulation.PitcherProfile;
 import com.mlbgame.simulation.PlateAppearanceModel;
 import com.mlbgame.simulation.PlayerSnapshot;
+import com.mlbgame.simulation.SimulationBalance.Baseline;
 import com.mlbgame.simulation.game.BattingLine;
 import com.mlbgame.simulation.game.FieldingLine;
 import com.mlbgame.simulation.game.PitchingLine;
 import java.util.random.RandomGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -58,14 +61,28 @@ public class NpcStatGenerator {
         return clamp(LINEUP_PA_PER_GAME + 0.03 * (overall - LEAGUE_AVERAGE), 3.9, 4.75);
     }
 
-    private static PaContext context(RandomGenerator rng) {
-        return rng.nextDouble() < RISP_SHARE ? RISP : PaContext.NEUTRAL;
+    private PaContext context(RandomGenerator rng) {
+        PaContext context = rng.nextDouble() < RISP_SHARE ? RISP : PaContext.NEUTRAL;
+        return baseline == null ? context : context.withBaseline(baseline);
     }
 
     private final PlateAppearanceModel model;
+    /** 리그 평균 기록 (null 이면 MLB) — {@link #forMode} */
+    private final Baseline baseline;
 
+    @Autowired
     public NpcStatGenerator(PlateAppearanceModel model) {
+        this(model, null);
+    }
+
+    private NpcStatGenerator(PlateAppearanceModel model, Baseline baseline) {
         this.model = model;
+        this.baseline = baseline;
+    }
+
+    /** 이 모드의 리그 평균 기록으로 생성하는 생성기 */
+    public NpcStatGenerator forMode(LeagueMode mode) {
+        return mode == LeagueMode.MLB ? this : new NpcStatGenerator(model, model.baseline(mode));
     }
 
     public record HitterLine(BattingLine batting, FieldingLine fielding) {

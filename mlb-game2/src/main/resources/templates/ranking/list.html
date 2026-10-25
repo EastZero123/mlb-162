@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container">
-    <h1 class="page-title" th:text="#{nav.rankings}">랭킹</h1>
+    <h1 class="page-title" th:text="#{ranking.title(${currentMode.label})}">랭킹</h1>
     <p class="muted" th:text="#{ranking.intro}">은퇴한 선수의 커리어가 은퇴 순간 기록으로 올라갑니다. 월간은 이번 달(한국 시간)에 은퇴한 선수만 보여줘요.</p>
 
     <div class="tab-row">
@@ -41,7 +41,7 @@
                     <td th:text="#{ranking.retiredAt(${r.entry().finalAge}, ${#temporals.format(r.entry().retiredAt, 'yyyy.MM.dd')})}">40세</td>
                     <td>
                         <strong th:switch="${category.name()}">
-                            <span th:case="'EARNINGS'" th:text="${@fmt.money(r.entry().careerEarnings)}">$0</span>
+                            <span th:case="'EARNINGS'" th:text="${@fmt.money(r.entry().careerEarnings, r.entry().leagueMode)}">$0</span>
                             <span th:case="'AVG'" th:text="${@fmt.rate(r.value())}">.300</span>
                             <span th:case="'ERA'" th:text="${@fmt.two(r.value())}">3.00</span>
                             <span th:case="'COMBINE'" th:text="${@fmt.one(r.value())}">50.0</span>

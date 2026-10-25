@@ -1,6 +1,7 @@
 package com.mlbgame.league.standings;
 
-import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
 import com.mlbgame.league.world.LeagueWorld;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 메이저리그 순위표. 저장하지 않고 월드 시드로 매번 같은 결과를 만든다.
+ * 최상위 레벨(메이저리그·KBO 1군) 순위표. 저장하지 않고 월드 시드로 매번 같은 결과를 만든다.
  * 내 선수가 메이저에서 뛴 시리즈는 내 팀의 실제 결과로 바꾼다.
  */
 @Service
@@ -34,17 +35,18 @@ public class StandingsService {
     @Transactional(readOnly = true)
     public StandingsTable standings(LeagueWorld world, int year, int seriesPlayed, Long myTeamId,
                                     Map<Integer, int[]> myMlbResults) {
-        List<Team> teams = teamRepository.findAllByOrderByIdAsc();
+        LeagueRuleset rules = LeagueRulesets.of(world);
+        List<Team> teams = teamRepository.findByLeagueModeOrderByIdAsc(world.getLeagueMode());
         Map<Long, int[]> records = StandingsGenerator.simulate(StandingsGenerator.seed(world.getSeed(), year),
-                teams, overallRatings(world), seriesPlayed, myTeamId, myMlbResults);
+                teams, overallRatings(world), seriesPlayed, myTeamId, myMlbResults, rules::gamesInSeries);
         return StandingsGenerator.table(teams, records);
     }
 
-    /** 구단 id → 메이저 종합 전력 (타선 50% / 선발 30% / 불펜 20%) */
+    /** 구단 id → 최상위 레벨 종합 전력 (타선 50% / 선발 30% / 불펜 20%) */
     @Transactional(readOnly = true)
     public Map<Long, Double> overallRatings(LeagueWorld world) {
         Map<Long, Double> ratings = new HashMap<>();
-        teamStrengthService.ratingsByTeam(world.getId(), LeagueLevel.MLB)
+        teamStrengthService.ratingsByTeam(world.getId(), LeagueRulesets.of(world).topLevel())
                 .forEach((teamId, r) -> ratings.put(teamId, r.overall()));
         return ratings;
     }

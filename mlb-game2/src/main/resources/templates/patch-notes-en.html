@@ -5,11 +5,51 @@
 <header th:replace="~{fragments/layout :: header}"></header>
 <main class="container narrow">
     <h1 class="page-title">Patch notes</h1>
-    <p class="muted">The update history. The latest patch is at the top.</p>
+    <p class="muted">Updates for MLB and KBO modes. The latest patch is at the top.</p>
+
+    <!-- 모드 필터: 태그 없는 항목은 공통 (스크립트가 없으면 전부 보임, app.js) -->
+    <div class="tab-row patch-filter" role="group" aria-label="Filter by mode">
+        <button type="button" class="tab active" data-patch-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="tab" data-patch-filter="mlb" aria-pressed="false">MLB</button>
+        <button type="button" class="tab" data-patch-filter="kbo" aria-pressed="false">KBO</button>
+    </div>
 
     <!--
         영어 화면용 패치노트 (한국어는 patch-notes.html). 새 패치는 두 파일 모두에 추가한다.
+        한 모드에만 해당하는 항목은 <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>...</li> 처럼 태그를 붙인다.
     -->
+
+    <article class="card section patch-note">
+        <header class="patch-head">
+            <h2 class="section-title">
+                <span class="patch-version">v1.0.0</span>
+                KBO mode launch · legend treatment
+            </h2>
+            <time class="muted small" datetime="2026-10-25">2026.10.25</time>
+        </header>
+
+        <h3 class="patch-kind">New</h3>
+        <ul class="patch-list">
+            <li>KBO mode is here. Use the MLB | KBO tabs at the top to switch modes; the dashboard, player creation and rankings follow the selected mode. Player pages always show the player's own mode.</li>
+            <li>Each mode has its own 3 player slots, and rankings are kept separately per mode.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>The league uses the real 10 KBO clubs, with two levels: the Futures League and the KBO first team.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>The regular season is 144 games: 36 three-game series, then 18 two-game series in August–September. You play every club 16 times (8 home, 8 away).</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>First-team call-ups and demotions are decided every 3 series. Once sent down, you can't come back up until the next review.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>The top 5 teams reach a step-ladder postseason: Wild Card Game (the 4th seed starts 1–0) → Semi-playoff → Playoff → Korean Series.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>Awards: Monthly MVP, All-Star, Regular Season MVP (a dominant starter can win it too), Rookie of the Year, Golden Glove (by position, plus pitchers), KBO Defense Award, 8 individual titles (batting, home runs, RBI, steals, wins, ERA, strikeouts, saves), Playoff and Korean Series MVP, and Futures awards.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>Salaries are in won: a 30 million minimum, salary negotiation every year from your first KBO season, and free agency after 8 years (high school) or 7 years (college). Stars can earn over 2 billion won a year.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>The draft has 10 clubs and 11 rounds, and every pick starts in the Futures League. Each club fields 3 foreign players.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>Game results follow KBO league averages — fewer strikeouts and higher batting averages than MLB.</li>
+        </ul>
+
+        <h3 class="patch-kind">Improvements</h3>
+        <ul class="patch-list">
+            <li>Legends are now protected: a player with a Hall of Fame score of 150 or more is never sent down from the majors (KBO first team), even when his skills decline late in his career. His playing time can still shrink as his skills drop.</li>
+            <li>The career page and ranking player profiles no longer show the Hall of Fame inducted/candidate label. The Hall of Fame score is still shown.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>The Futures League is a development league, so high school and college rookies get regular playing time.</li>
+            <li data-mode="kbo"><span class="mode-tag kbo">KBO</span>Hall of Fame cumulative stats (hits, home runs, wins, etc.) are adjusted for the 144-game KBO season.</li>
+        </ul>
+    </article>
 
     <article class="card section patch-note">
         <header class="patch-head">

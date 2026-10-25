@@ -5,7 +5,7 @@ import com.mlbgame.common.Messages;
 /**
  * 포스트시즌 라운드 (MLB 2022~ 방식). 홈 경기 배정: 3전제는 모두 상위 시드 홈, 5전제 2-2-1, 7전제 2-3-2.
  */
-public enum PostseasonRound {
+public enum PostseasonRound implements RoundSpec {
     WILD_CARD(1, "와일드카드 시리즈", 3, "HHH"),
     DIVISION(2, "디비전시리즈", 5, "HHAAH"),
     CHAMPIONSHIP(3, "리그 챔피언십시리즈", 7, "HHAAAHH"),
@@ -30,23 +30,28 @@ public enum PostseasonRound {
         throw new IllegalArgumentException("라운드 번호: " + number);
     }
 
+    @Override
     public int winsNeeded() {
         return maxGames / 2 + 1;
     }
 
     /** gameIndex(0부터) 경기가 상위 시드 홈인지 */
+    @Override
     public boolean highSeedHome(int gameIndex) {
         return homePattern.charAt(gameIndex) == 'H';
     }
 
+    @Override
     public int getNumber() {
         return number;
     }
 
+    @Override
     public String getLabel() {
         return Messages.text("PostseasonRound." + name(), label);
     }
 
+    @Override
     public int getMaxGames() {
         return maxGames;
     }

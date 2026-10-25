@@ -1,9 +1,10 @@
 package com.mlbgame.league.world;
 
+import com.mlbgame.league.LeagueMode;
 import java.util.List;
 import java.util.random.RandomGenerator;
 
-/** NPC 가상 이름 생성 (출신 비율: 미국 62% / 중남미 28% / 일본 4% / 한국 3% / 대만 3%) */
+/** NPC 가상 이름 생성 (MLB 출신 비율: 미국 62% / 중남미 28% / 일본 4% / 한국 3% / 대만 3%, KBO: 한국 선수 + 외국인) */
 final class NameGenerator {
 
     private static final List<String> US_FIRST = List.of(
@@ -32,7 +33,34 @@ final class NameGenerator {
             "Wei-Lun Chen", "Chih-Hao Lin", "Yu-Cheng Wang", "Po-Yu Huang", "Kuan-Ting Liu",
             "Tsung-Che Wu", "Chun-Hsien Tsai", "Yi-Hsuan Chang", "Ming-Jie Yang", "Hsin-Yu Hsu");
 
+    // KBO 국내 선수: 한글 성 + 두 글자 이름
+    private static final List<String> KO_SURNAME = List.of(
+            "김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "류", "홍",
+            "전", "고", "문", "양", "손", "배", "백", "허", "유", "남", "노", "하", "곽", "성", "차");
+    private static final List<String> KO_GIVEN_FIRST = List.of(
+            "민", "서", "도", "하", "지", "준", "현", "우", "성", "태", "재", "동", "승", "상", "영", "정", "진", "주", "건", "시",
+            "은", "형", "명", "한", "용", "석", "원", "기", "경", "규");
+    private static final List<String> KO_GIVEN_SECOND = List.of(
+            "준", "우", "호", "훈", "민", "혁", "현", "수", "진", "빈", "원", "영", "석", "철", "환", "범", "규", "겸", "율", "찬",
+            "희", "욱", "재", "섭", "웅", "엽", "택", "결", "솔", "윤");
+
     private NameGenerator() {
+    }
+
+    /** 모드의 국내 선수 이름 (MLB: 출신 비율대로, KBO: 한국 선수) */
+    static String next(RandomGenerator random, LeagueMode mode) {
+        return mode == LeagueMode.KBO ? korean(random) : next(random);
+    }
+
+    /** KBO 외국인 선수 (미국·중남미) */
+    static String foreign(RandomGenerator random) {
+        return random.nextInt(100) < 65
+                ? pick(US_FIRST, random) + " " + pick(US_LAST, random)
+                : pick(LATIN_FIRST, random) + " " + pick(LATIN_LAST, random);
+    }
+
+    static String korean(RandomGenerator random) {
+        return pick(KO_SURNAME, random) + pick(KO_GIVEN_FIRST, random) + pick(KO_GIVEN_SECOND, random);
     }
 
     static String next(RandomGenerator random) {

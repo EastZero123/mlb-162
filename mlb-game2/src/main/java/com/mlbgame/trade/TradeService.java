@@ -5,7 +5,10 @@ import com.mlbgame.common.Messages;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorld;
+import com.mlbgame.league.world.PayrollRules;
 import com.mlbgame.league.world.NpcPlayer;
 import com.mlbgame.league.world.NpcPlayerRepository;
 import com.mlbgame.league.world.NpcStatus;
@@ -57,13 +60,15 @@ public class TradeService {
     @Transactional
     public TradeEvent afterSeries(Player player, PlayerSeason season, int seriesNo, LeagueWorld world,
                                   Map<Integer, int[]> myMlbResults) {
-        if (!TradeRules.inWindow(seriesNo, season.getLeagueLevel()) || season.isSidelined()
+        LeagueRuleset rules = LeagueRulesets.of(player);
+        if (!TradeRules.inWindow(seriesNo, rules.tradeEligible(season.getLeagueLevel())) || season.isSidelined()
                 || player.isNoTradeClause()) {                  // 거부 조항: 구단 주도 트레이드·루머 없음
             return null;
         }
         Context ctx = context(player, season, seriesNo, world, myMlbResults);
         double chance = TradeRules.chance(ctx.winPct.getOrDefault(player.getTeam().getId(), 0.5), player.getOverall(),
-                player.getSalary(), ctx.overBudget, requestDenied(player, season), player.getReputation());
+                player.getSalary(), ctx.overBudget, requestDenied(player, season), player.getReputation(),
+                rules.payroll().expensiveSalary());
         if (dice.nextDouble() >= chance) {
             return null;
         }
@@ -136,7 +141,7 @@ public class TradeService {
 
     private TradeEvent execute(Player player, PlayerSeason season, int seriesNo, Context ctx, String note) {
         Long from = player.getTeam().getId();
-        WorldTeam destination = destination(from, ctx);
+        WorldTeam destination = destination(from, ctx, LeagueRulesets.of(player).payroll());
         player.tradeTo(destination.getTeam());
         season.trade(destination.getTeam().getId());
         return repository.save(new TradeEvent(player.getId(), season.getSeasonYear(), seriesNo, Kind.TRADE, from,
@@ -144,7 +149,7 @@ public class TradeService {
     }
 
     /** 경쟁 팀 중 (승률 − .5 + 예산 여유) 가중 무작위 */
-    private WorldTeam destination(Long currentTeamId, Context ctx) {
+    private WorldTeam destination(Long currentTeamId, Context ctx, PayrollRules payroll) {
         List<WorldTeam> candidates = new ArrayList<>(ctx.teams.stream()
                 .filter(t -> !t.getTeam().getId().equals(currentTeamId))
                 .filter(t -> ctx.winPct.getOrDefault(t.getTeam().getId(), 0.5) >= TradeRules.CONTENDER_PCT)
@@ -156,7 +161,7 @@ public class TradeService {
         double[] weights = new double[candidates.size()];
         for (int i = 0; i < candidates.size(); i++) {
             WorldTeam t = candidates.get(i);
-            double room = Math.max(0, t.getBudget() - ctx.payroll.getOrDefault(t.getTeam().getId(), 0L)) / 100_000_000.0;
+            double room = Math.max(0, t.getBudget() - ctx.payroll.getOrDefault(t.getTeam().getId(), 0L)) / payroll.budgetRoomScale();
             weights[i] = Math.max(0.05, ctx.winPct.getOrDefault(t.getTeam().getId(), 0.5) - 0.5 + room);
             total += weights[i];
         }

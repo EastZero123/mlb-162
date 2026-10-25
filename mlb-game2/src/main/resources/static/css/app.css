@@ -116,6 +116,44 @@ a { color: var(--primary); }
     border-bottom: 1px solid var(--border);
 }
 .brand { font-weight: 800; text-decoration: none; color: var(--text); }
+.header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* 모드 전환 (MLB | KBO) */
+.mode-switch {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+}
+.mode-switch a {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--muted);
+}
+.mode-switch a.active { background: var(--primary); color: #fff; }
+.mode-switch a:not(.active):hover { color: var(--text); }
+
+/* KBO 모드: 강조색만 바꾼다 (헤더가 mode-kbo 면 페이지 전체) */
+:root:has(.site-header.mode-kbo) {
+    --primary: #b3122e;
+    --primary-hover: #8f0e25;
+    --accent: #0b3d91;
+    --info-bg: #fbe9ec;
+    --info-text: #8f0e25;
+}
+@media (prefers-color-scheme: dark) {
+    :root:has(.site-header.mode-kbo) {
+        --primary: #e0566c;
+        --primary-hover: #ea7486;
+        --accent: #4b7fd6;
+        --info-bg: #3a1c24;
+        --info-text: #f2a6b2;
+    }
+}
 .header-right { display: flex; align-items: center; gap: 12px; }
 .header-right form { margin: 0; }
 .who { font-weight: 600; font-size: 14px; }
@@ -424,6 +462,7 @@ a.btn { text-decoration: none; text-align: center; }
     .status-grid { grid-template-columns: repeat(2, 1fr); }
     .status-head { flex-direction: column; }
     .site-header { flex-wrap: wrap; gap: 8px; }
+    .header-left { gap: 8px; flex-wrap: wrap; }
     .header-right { gap: 8px; flex-wrap: wrap; }
     .header-right .btn { padding: 6px 10px; font-size: 13px; }
     .container { padding: 16px 12px; }
@@ -457,6 +496,22 @@ a.btn { text-decoration: none; text-align: center; }
 .patch-version { color: var(--primary); margin-right: 6px; }
 .patch-kind { font-size: 14px; margin: 14px 0 6px; color: var(--muted); }
 .patch-list { margin: 0; padding-left: 20px; line-height: 1.7; }
+.patch-filter { margin: 4px 0 14px; }
+button.tab { font: inherit; font-size: 14px; cursor: pointer; }
+/* 모드 태그 (한 모드에만 해당하는 항목) — 태그가 없으면 공통 */
+.mode-tag {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    vertical-align: 1px;
+    color: #fff;
+}
+.mode-tag.mlb { background: #0b3d91; }
+.mode-tag.kbo { background: #b3122e; }
 .auth-public { margin-top: 8px; }
 
 /* 기록표: 합계·통산 행, 우승 표시 */

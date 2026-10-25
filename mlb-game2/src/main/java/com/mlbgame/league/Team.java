@@ -3,12 +3,16 @@ package com.mlbgame.league;
 import com.mlbgame.common.Messages;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-/** MLB 구단. 데이터는 Flyway 시드(V2)로만 관리한다. */
+/** 구단 (모드별). 데이터는 Flyway 시드(V2 MLB)로만 관리한다. */
 @Entity
 @Table(name = "teams")
 public class Team {
@@ -35,7 +39,16 @@ public class Team {
     @Column(name = "primary_color", nullable = false, length = 7)
     private String primaryColor;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "league_mode", nullable = false, length = 5)
+    private LeagueMode leagueMode = LeagueMode.MLB;
+
     protected Team() {
+    }
+
+    public LeagueMode getLeagueMode() {
+        return leagueMode;
     }
 
     public Long getId() {

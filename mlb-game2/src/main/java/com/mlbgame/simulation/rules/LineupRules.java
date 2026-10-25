@@ -9,10 +9,11 @@ import com.mlbgame.simulation.game.UserHitter.HitterRole;
 import java.util.random.RandomGenerator;
 
 /**
- * 타자의 출전 판정과 자동 타순. 소속 레벨 평균 OVR 대비 내 선수 OVR 로 팀 내 입지가 정해진다.
+ * 타자의 출전 판정과 자동 타순. 소속 레벨의 주전 기준 OVR(보통 레벨 평균, {@link LeagueLevel#getRegularRating}) 대비
+ * 내 선수 OVR 로 팀 내 입지가 정해진다.
  *
  * <pre>
- * OVR − 레벨 평균   입지      경기별 선발 확률
+ * OVR − 주전 기준   입지      경기별 선발 확률
  * 0 이상           주전      100% (피로 80 이상이면 휴식일 → 대타 대기)
  * −6 ~ 0           플래툰    75% + 차이 × 6%  (−6 → 39%)
  * −6 미만          벤치      15%
@@ -48,7 +49,7 @@ public final class LineupRules {
     }
 
     public static Standing standing(double overall, LeagueLevel level) {
-        double diff = overall - level.getAverageRating();
+        double diff = overall - level.getRegularRating();
         if (diff >= 0) {
             return Standing.REGULAR;
         }
@@ -57,7 +58,7 @@ public final class LineupRules {
 
     /** 오늘 경기의 역할 */
     public static HitterRole roleForGame(double overall, LeagueLevel level, int fatigue, RandomGenerator random) {
-        double diff = overall - level.getAverageRating();
+        double diff = overall - level.getRegularRating();
         double startChance = switch (standing(overall, level)) {
             case REGULAR -> fatigue >= REST_FATIGUE ? 0 : 1;
             case PLATOON -> PLATOON_BASE + diff * PLATOON_PER_POINT;
@@ -80,7 +81,7 @@ public final class LineupRules {
      * </ul>
      */
     public static int battingSlot(PlayerSnapshot player, LeagueLevel level) {
-        double diff = player.overall() - level.getAverageRating();
+        double diff = player.overall() - level.getRegularRating();
         double speed = avg(player, Attribute.SPEED, Attribute.STEALING, Attribute.EYE);
         double contact = avg(player, Attribute.CONTACT, Attribute.AVOID_K);
         double power = avg(player, Attribute.POWER, Attribute.GAP_POWER);

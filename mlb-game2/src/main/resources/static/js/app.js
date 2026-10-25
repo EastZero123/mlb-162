@@ -134,3 +134,39 @@ document.addEventListener('submit', function (event) {
         });
     });
 })();
+
+// 패치노트 모드 필터: 전체 / MLB / KBO. data-mode 가 없는 항목은 공통이라 항상 보인다.
+// 보이는 항목이 없는 분류(<h3>+목록)와 패치(<article>)는 통째로 숨긴다. 스크립트가 없으면 전부 보인다.
+(function () {
+    'use strict';
+
+    var buttons = document.querySelectorAll('[data-patch-filter]');
+    if (!buttons.length) return;
+
+    function apply(filter) {
+        document.querySelectorAll('.patch-list li').forEach(function (li) {
+            var mode = li.getAttribute('data-mode');
+            li.hidden = filter !== 'all' && mode !== null && mode !== filter;
+        });
+        document.querySelectorAll('.patch-list').forEach(function (list) {
+            var empty = !list.querySelector('li:not([hidden])');
+            list.hidden = empty;
+            var kind = list.previousElementSibling;
+            if (kind && kind.classList.contains('patch-kind')) kind.hidden = empty;
+        });
+        document.querySelectorAll('.patch-note').forEach(function (note) {
+            note.hidden = !note.querySelector('.patch-list:not([hidden])');
+        });
+        buttons.forEach(function (b) {
+            var on = b.getAttribute('data-patch-filter') === filter;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    }
+
+    buttons.forEach(function (b) {
+        b.addEventListener('click', function () {
+            apply(b.getAttribute('data-patch-filter'));
+        });
+    });
+})();

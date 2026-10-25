@@ -1,6 +1,7 @@
 package com.mlbgame.ranking;
 
 import com.mlbgame.common.Messages;
+import com.mlbgame.league.LeagueMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -46,14 +47,20 @@ public class RankingService {
 
     @Transactional(readOnly = true)
     public List<Row> top(RankingCategory category, Period period) {
+        return top(category, period, LeagueMode.MLB);
+    }
+
+    /** 한 모드의 랭킹 */
+    @Transactional(readOnly = true)
+    public List<Row> top(RankingCategory category, Period period, LeagueMode mode) {
         LocalDateTime from = period == Period.MONTH ? monthStart(LocalDate.now(KOREA)) : ALL_TIME;
         PageRequest page = PageRequest.of(0, TOP * 2, category.sort());   // 0 제외 필터를 위해 넉넉히
         List<RankingEntry> entries = switch (category.getQualifier()) {
-            case NONE -> repository.findByRetiredAtGreaterThanEqual(from, page);
-            case PLATE_APPEARANCES -> repository.findByRetiredAtGreaterThanEqualAndMlbPaGreaterThanEqual(
-                    from, RankingCategory.MIN_PLATE_APPEARANCES, page);
-            case INNINGS -> repository.findByRetiredAtGreaterThanEqualAndMlbOutsGreaterThanEqual(
-                    from, RankingCategory.MIN_OUTS, page);
+            case NONE -> repository.findByLeagueModeAndRetiredAtGreaterThanEqual(mode, from, page);
+            case PLATE_APPEARANCES -> repository.findByLeagueModeAndRetiredAtGreaterThanEqualAndMlbPaGreaterThanEqual(
+                    mode, from, RankingCategory.MIN_PLATE_APPEARANCES, page);
+            case INNINGS -> repository.findByLeagueModeAndRetiredAtGreaterThanEqualAndMlbOutsGreaterThanEqual(
+                    mode, from, RankingCategory.MIN_OUTS, page);
         };
         List<RankingEntry> filtered = entries.stream()
                 .filter(e -> !category.excludesZero() || category.valueOf(e) > 0)

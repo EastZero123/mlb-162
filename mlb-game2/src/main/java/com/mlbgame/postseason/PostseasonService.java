@@ -3,9 +3,9 @@ package com.mlbgame.postseason;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mlbgame.award.AwardService;
-import com.mlbgame.award.AwardType;
 import com.mlbgame.common.Messages;
-import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.standings.StandingsService;
 import com.mlbgame.league.standings.StandingsTable;
 import com.mlbgame.league.world.LeagueWorld;
@@ -100,11 +100,12 @@ public class PostseasonService {
     private Postseason start(Long userId, Player player, PlayerSeason season) {
         LeagueWorld world = leagueWorldService.getOrCreate(player.getId());
         MlbSeason mlb = seasonService.mlbSeason(userId, player.getId());
-        StandingsTable table = standingsService.standings(world, season.getSeasonYear(), PlayerSeason.SERIES_PER_SEASON,
+        LeagueRuleset rules = LeagueRulesets.of(player);
+        StandingsTable table = standingsService.standings(world, season.getSeasonYear(), rules.seriesPerSeason(),
                 player.getTeam().getId(), mlb.teamResults());
-        Bracket bracket = PostseasonEngine.initial(table);
+        Bracket bracket = rules.postseason().initial(table);
         boolean qualified = bracket.seeds.stream().anyMatch(s -> s.teamId.equals(player.getTeam().getId()));
-        boolean plays = qualified && season.getLeagueLevel() == LeagueLevel.MLB && !season.isSidelined();
+        boolean plays = qualified && season.getLeagueLevel().isTop() && !season.isSidelined();
         Postseason postseason = repository.save(new Postseason(player.getId(), season.getSeasonYear(), qualified, plays,
                 write(bracket), season.getFatigue(), season.usage()));
         if (!qualified) {
@@ -151,9 +152,10 @@ public class PostseasonService {
 
     private void playRound(Player player, Postseason postseason, LeagueWorld world, Bracket bracket) {
         int round = postseason.getNextRound();
+        PostseasonFormat format = LeagueRulesets.of(player).postseason();
         Long myTeam = player.getTeam().getId();
         Map<Long, Double> overall = standingsService.overallRatings(world);
-        Map<Long, TeamRatings> ratings = teamStrengthService.ratingsByTeam(world.getId(), LeagueLevel.MLB);
+        Map<Long, TeamRatings> ratings = teamStrengthService.ratingsByTeam(world.getId(), LeagueRulesets.of(player).topLevel());
 
         BattingLine batting = batting(postseason);
         PitchingLine pitching = pitching(postseason);
@@ -179,17 +181,17 @@ public class PostseasonService {
             } else {
                 SplittableRandom rng = new SplittableRandom(world.getSeed() * 41 + postseason.getSeasonYear() * 7L
                         + round * 101L + i);
-                PostseasonEngine.simulate(series, overall.getOrDefault(series.highTeamId, 65.0),
+                PostseasonEngine.simulate(series, format.round(series.round), overall.getOrDefault(series.highTeamId, 65.0),
                         overall.getOrDefault(series.lowTeamId, 65.0), rng);
             }
         }
-        if (round < PostseasonRound.WORLD_SERIES.getNumber()) {
-            PostseasonEngine.createNextRound(bracket, round);
+        if (round < format.finalRound()) {
+            format.createNextRound(bracket, round);
         }
         postseason.updateUsage(usage);
         postseason.afterRound(write(bracket), write(batting), write(pitching), fatigue, injured);
-        if (round == PostseasonRound.WORLD_SERIES.getNumber()) {
-            postseason.finish(bracket.champion());
+        if (round == format.finalRound()) {
+            postseason.finish(bracket.champion(format.finalRound()));
         }
     }
 
@@ -200,7 +202,8 @@ public class PostseasonService {
     /** 내 팀 시리즈: 경기마다 1경기짜리 시리즈 입력으로 엔진을 돌린다 (피로·등판 상태는 경기 사이에 이어짐) */
     private UserSeries playUserSeries(Player player, Series series, Map<Long, TeamRatings> ratings,
                                       int fatigue, PitcherUsage usage, boolean injured) {
-        PostseasonRound round = PostseasonRound.of(series.round);
+        LeagueRuleset rules = LeagueRulesets.of(player);
+        RoundSpec round = rules.postseason().round(series.round);
         Long myTeam = player.getTeam().getId();
         boolean userHigh = myTeam.equals(series.highTeamId);
         Long opponent = userHigh ? series.lowTeamId : series.highTeamId;
@@ -213,7 +216,7 @@ public class PostseasonService {
         int game = 0;
         while (series.highWins < round.winsNeeded() && series.lowWins < round.winsNeeded()) {
             boolean home = round.highSeedHome(game) == userHigh;
-            SeriesResult result = seriesSimulator.simulate(new SeriesInput(SeriesRecorder.newSeed(), LeagueLevel.MLB,
+            SeriesResult result = seriesSimulator.simulate(new SeriesInput(SeriesRecorder.newSeed(), rules.topLevel(),
                     home, mine, theirs, 1, snapshot, fatigue, usage, injured));
             GameResult g = result.games().get(0);
             if (g.isWin() == userHigh) series.highWins++;
@@ -232,17 +235,14 @@ public class PostseasonService {
 
     private void checkMvp(Player player, int year, int round, Series series, Long myTeam, UserSeries user) {
         boolean won = myTeam.equals(series.winnerId);
-        if (!won || (round != PostseasonRound.CHAMPIONSHIP.getNumber() && round != PostseasonRound.WORLD_SERIES.getNumber())) {
+        PostseasonFormat.SeriesMvp mvp = LeagueRulesets.of(player).postseason().seriesMvp(round);
+        if (!won || mvp == null) {
             return;
         }
         if (!worthyOfMvp(player.getPosition(), user.batting, user.pitching)) {
             return;
         }
-        if (round == PostseasonRound.CHAMPIONSHIP.getNumber()) {
-            awardService.grantPostseason(player, year, LCS_MARKER, AwardType.LCS_MVP);
-        } else {
-            awardService.grantPostseason(player, year, WS_MARKER, AwardType.WORLD_SERIES_MVP);
-        }
+        awardService.grantPostseason(player, year, mvp.marker(), mvp.type());
     }
 
     static boolean worthyOfMvp(Position position, BattingLine batting, PitchingLine pitching) {

@@ -72,7 +72,12 @@ public final class PostseasonEngine {
 
     /** NPC 시리즈: 한쪽이 필요한 승수에 도달할 때까지 경기별 승률로 진행 */
     public static void simulate(Series series, double highRating, double lowRating, RandomGenerator rng) {
-        PostseasonRound round = PostseasonRound.of(series.round);
+        simulate(series, PostseasonRound.of(series.round), highRating, lowRating, rng);
+    }
+
+    /** 라운드 방식을 직접 받는 버전 (모드별 {@link PostseasonFormat}) */
+    public static void simulate(Series series, RoundSpec round, double highRating, double lowRating,
+                                RandomGenerator rng) {
         int game = 0;
         while (series.highWins < round.winsNeeded() && series.lowWins < round.winsNeeded()) {
             boolean highHome = round.highSeedHome(game);

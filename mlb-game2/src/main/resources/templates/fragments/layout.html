@@ -3,7 +3,7 @@
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title th:text="${title} + ' | ' + #{app.name}">MLB 선수 키우기</title>
+    <title th:text="${title} + ' | ' + #{app.name.mode(${currentMode != null ? currentMode.label : 'MLB'})}">MLB 선수 키우기</title>
     <!-- 홈 화면에 추가하면 주소창 없이 앱처럼 열린다 -->
     <link rel="manifest" th:href="@{/manifest.webmanifest}">
     <meta name="theme-color" content="#0b3d91" media="(prefers-color-scheme: light)">
@@ -19,8 +19,18 @@
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
-<header th:fragment="header" class="site-header">
-    <a class="brand" th:href="@{/dashboard}" th:text="'⚾ ' + #{app.name}">⚾ MLB 선수 키우기</a>
+<header th:fragment="header" class="site-header"
+        th:classappend="${currentMode != null and currentMode.name() == 'KBO'} ? 'mode-kbo'">
+    <div class="header-left">
+        <a class="brand" th:href="@{/dashboard}"
+           th:text="'⚾ ' + #{app.name.mode(${currentMode != null ? currentMode.label : 'MLB'})}">⚾ MLB 선수 키우기</a>
+        <!-- 모드 전환 (언어 전환처럼 쿠키에 기억) -->
+        <nav class="mode-switch" th:attr="aria-label=#{mode.switchLabel}" th:if="${modes != null}">
+            <a th:each="m : ${modes}" th:href="@{/mode/{m}(m=${m.name().toLowerCase()})}" th:text="${m.label}"
+               th:classappend="${m == currentMode} ? 'active'"
+               th:attr="aria-current=${m == currentMode} ? 'page' : null">MLB</a>
+        </nav>
+    </div>
     <div class="header-right" sec:authorize="isAuthenticated()"
          xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <a class="nav-link" th:href="@{/rankings}" th:text="#{nav.rankings}">랭킹</a>

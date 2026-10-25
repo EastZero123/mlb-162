@@ -1,6 +1,10 @@
 package com.mlbgame.league.world;
 
+import com.mlbgame.league.LeagueMode;
 import com.mlbgame.league.TeamRepository;
+import com.mlbgame.league.mode.LeagueRulesets;
+import com.mlbgame.player.Player;
+import com.mlbgame.player.PlayerRepository;
 import com.mlbgame.league.world.WorldGenerator.GeneratedNpc;
 import com.mlbgame.league.world.WorldGenerator.GeneratedTeam;
 import java.util.ArrayList;
@@ -26,9 +30,12 @@ public class LeagueWorldService {
     private final WorldTeamRepository worldTeamRepository;
     private final TeamRepository teamRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final PlayerRepository playerRepository;
 
     public LeagueWorldService(LeagueWorldRepository worldRepository, WorldTeamRepository worldTeamRepository,
-                              TeamRepository teamRepository, JdbcTemplate jdbcTemplate) {
+                              TeamRepository teamRepository, JdbcTemplate jdbcTemplate,
+                              PlayerRepository playerRepository) {
+        this.playerRepository = playerRepository;
         this.worldRepository = worldRepository;
         this.worldTeamRepository = worldTeamRepository;
         this.teamRepository = teamRepository;
@@ -43,8 +50,11 @@ public class LeagueWorldService {
 
     @Transactional
     public LeagueWorld create(Long playerId, long seed) {
-        LeagueWorld world = worldRepository.save(new LeagueWorld(playerId, seed, WorldGenerator.FIRST_SEASON));
-        List<GeneratedTeam> generated = WorldGenerator.generate(seed, teamRepository.findAllByOrderByIdAsc());
+        // 월드는 선수의 모드를 따른다 (그 모드의 구단·연봉 규칙)
+        LeagueMode mode = playerRepository.findById(playerId).map(Player::getLeagueMode).orElse(LeagueMode.MLB);
+        LeagueWorld world = worldRepository.save(new LeagueWorld(playerId, seed, WorldGenerator.FIRST_SEASON, mode));
+        List<GeneratedTeam> generated = WorldGenerator.generate(seed, teamRepository.findByLeagueModeOrderByIdAsc(mode),
+                LeagueRulesets.of(mode).payroll());
 
         List<Object[]> npcRows = new ArrayList<>();
         for (GeneratedTeam team : generated) {

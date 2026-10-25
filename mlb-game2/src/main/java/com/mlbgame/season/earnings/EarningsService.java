@@ -1,8 +1,8 @@
 package com.mlbgame.season.earnings;
 
 import com.mlbgame.league.LeagueLevel;
-import com.mlbgame.league.world.Payroll;
-import com.mlbgame.season.PlayerSeason;
+import com.mlbgame.league.mode.LeagueRuleset;
+import com.mlbgame.league.mode.LeagueRulesets;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +28,10 @@ public class EarningsService {
         earning.add(amount);
     }
 
-    /** 시리즈 1회분 연봉 = 소속 레벨 시즌 연봉 / 54 (마이너는 레벨별 연봉, 메이저는 최저 연봉 — 계약 연봉은 M4) */
+    /** 시리즈 1회분 연봉 = 소속 레벨 시즌 연봉 / 시즌 시리즈 수(MLB 54) (마이너는 레벨별 연봉, 메이저는 최저 연봉 — 계약 연봉은 M4) */
     public static long salaryPerSeries(LeagueLevel level) {
-        return Math.round((double) Payroll.minorLeagueSalary(level) / PlayerSeason.SERIES_PER_SEASON);
+        LeagueRuleset rules = LeagueRulesets.of(level);
+        return Math.round((double) rules.payroll().levelSalary(level) / rules.seriesPerSeason());
     }
 
     @Transactional(readOnly = true)

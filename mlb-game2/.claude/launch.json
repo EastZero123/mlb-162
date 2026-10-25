@@ -6,6 +6,14 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "gradlew.bat", "bootRun"],
       "port": 8080
+    },
+    {
+      "name": "mlb-game-jdk21",
+      "runtimeExecutable": "C:\\ai\\mlb-162-main\\mlb-162\\mlb-game2\\gradlew.bat",
+      "runtimeArgs": ["bootRun"],
+      "cwd": "C:\\ai\\mlb-162-main\\mlb-162\\mlb-game2",
+      "env": { "JAVA_HOME": "C:\\Users\\최동영\\.jdks\\corretto-21.0.12.1" },
+      "port": 8080
     }
   ]
 }

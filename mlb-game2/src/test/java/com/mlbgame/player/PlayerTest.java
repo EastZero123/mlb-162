@@ -95,6 +95,7 @@ class PlayerTest {
     void 마이너리그_소속은_구단명_뒤에_레벨을_붙여_표시한다() {
         Team tigers = Mockito.mock(Team.class);
         Mockito.when(tigers.getNameKo()).thenReturn("디트로이트 타이거스");
+        Mockito.when(tigers.getDisplayName()).thenReturn("디트로이트 타이거스");   // 표시명은 언어별 (다국어)
 
         Player player = hitter(Position.SS, Education.COLLEGE, 40);
         assertThat(player.getTeamDisplayName()).isNull();

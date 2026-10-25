@@ -1,13 +1,15 @@
 package com.mlbgame.trade;
 
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.mode.LeagueRulesets;
+import com.mlbgame.league.world.PayrollRules;
 import com.mlbgame.reputation.ReputationRules;
 
 /**
  * 트레이드 이벤트 규칙 (설계: requirements.md FR-CAR-07).
  *
  * <pre>
- * 기간        6번째 ~ 36번째 시리즈 뒤 (7월 말 트레이드 마감), 메이저·트리플A 소속만
+ * 기간        6번째 ~ 36번째 시리즈 뒤 (7월 말 트레이드 마감), 최상위 레벨과 그 바로 아래 소속만 (MLB: 메이저·트리플A)
  * 시리즈당 확률  1.2% × (소속팀 승률 .450 미만이면 ×2) × (OVR 70 이상 ×1.5)
  *                × (연봉 $15M 이상 & 구단 예산 초과 ×2) × (트레이드 요청 거절 이력 ×4), 최대 30%
  * 단계        처음 걸리면 루머, 루머가 있는 상태에서 또 걸리면 트레이드 성사
@@ -26,14 +28,18 @@ public final class TradeRules {
     public static final double REQUEST_SUCCESS = 0.30;
     public static final double REBUILDING_PCT = 0.450;
     public static final double CONTENDER_PCT = 0.520;
-    public static final long EXPENSIVE_SALARY = 15_000_000L;
+    public static final long EXPENSIVE_SALARY = PayrollRules.MLB.expensiveSalary();
 
     private TradeRules() {
     }
 
     public static boolean inWindow(int seriesPlayed, LeagueLevel level) {
-        return seriesPlayed >= FIRST_SERIES && seriesPlayed <= DEADLINE_SERIES
-                && (level == LeagueLevel.MLB || level == LeagueLevel.AAA);
+        return inWindow(seriesPlayed, LeagueRulesets.of(level).tradeEligible(level));
+    }
+
+    /** @param eligibleLevel 트레이드가 일어나는 레벨(최상위·그 바로 아래)인지 — {@code LeagueRuleset.tradeEligible} */
+    public static boolean inWindow(int seriesPlayed, boolean eligibleLevel) {
+        return seriesPlayed >= FIRST_SERIES && seriesPlayed <= DEADLINE_SERIES && eligibleLevel;
     }
 
     public static double chance(double teamWinPct, double overall, long salary, boolean overBudget, boolean requestDenied) {
@@ -43,10 +49,16 @@ public final class TradeRules {
     /** 평판 30 미만이면 ×1.5 ({@link ReputationRules#autoTradeFactor}) */
     public static double chance(double teamWinPct, double overall, long salary, boolean overBudget, boolean requestDenied,
                                 int reputation) {
+        return chance(teamWinPct, overall, salary, overBudget, requestDenied, reputation, EXPENSIVE_SALARY);
+    }
+
+    /** @param expensiveSalary 고액 연봉 기준 (모드의 통화 단위) */
+    public static double chance(double teamWinPct, double overall, long salary, boolean overBudget, boolean requestDenied,
+                                int reputation, long expensiveSalary) {
         double p = BASE_CHANCE;
         if (teamWinPct < REBUILDING_PCT) p *= 2;
         if (overall >= 70) p *= 1.5;
-        if (salary >= EXPENSIVE_SALARY && overBudget) p *= 2;
+        if (salary >= expensiveSalary && overBudget) p *= 2;
         if (requestDenied) p *= 4;
         p *= ReputationRules.autoTradeFactor(reputation);
         return Math.min(MAX_CHANCE, p);

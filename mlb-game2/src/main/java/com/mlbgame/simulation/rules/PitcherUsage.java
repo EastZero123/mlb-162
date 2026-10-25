@@ -45,7 +45,7 @@ public record PitcherUsage(
         if (starter) {
             int rest = ROTATION;
             if (recovery < LOW_RECOVERY) rest++;
-            if (overall - level.getAverageRating() < -6) rest++;
+            if (overall - level.getRegularRating() < -6) rest++;
             return gamesSinceStart >= rest ? PitcherRole.STARTER : PitcherRole.NONE;
         }
         if (consecutiveDays >= MAX_CONSECUTIVE_DAYS) {

@@ -88,7 +88,7 @@ public class SeriesSimulator {
                         UserPitcher.of(player, pitcherRole, pitcherForm));
             }
 
-            GameResult result = gameSimulator.simulate(setup, rng);
+            GameResult result = gameSimulator.simulate(setup, rng, input.level().getMode());   // 레벨의 모드 = 리그 평균 기록
             games.add(result);
             if (result.isWin()) {
                 wins++;

@@ -15,6 +15,8 @@ import com.mlbgame.common.StatFormat;
 import com.mlbgame.contract.ContractOffer;
 import com.mlbgame.contract.ContractService;
 import com.mlbgame.league.LeagueLevel;
+import com.mlbgame.league.LeagueMode;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.player.Attribute;
 import com.mlbgame.player.Education;
 import com.mlbgame.player.Hand;
@@ -31,6 +33,7 @@ import com.mlbgame.postseason.PostseasonService;
 import com.mlbgame.season.PlayerSeason;
 import com.mlbgame.season.SeasonService;
 import com.mlbgame.season.transition.SeasonTransitionService;
+import com.mlbgame.simulation.rules.LineupRules;
 import com.mlbgame.simulation.game.BattingLine;
 import com.mlbgame.simulation.game.PitchingLine;
 import com.mlbgame.training.AutoTrainingOrder;
@@ -63,7 +66,8 @@ import org.springframework.test.context.ActiveProfiles;
  * <ul>
  *   <li>훈련·스탯업 포인트: 포지션 능력치 11개를 순서대로 돌아가며 (균형형)</li>
  *   <li>계약: 연장 제안이 있으면 수락, 아니면 총액(연봉×연수)이 가장 큰 제안 수락. 청문회·역제안은 쓰지 않음</li>
- *   <li>은퇴: {@value #VOLUNTARY_AGE}세 이상이고 그 시즌 메이저 출전이 없으면 자발적 은퇴, 아니면 45세 강제 은퇴</li>
+ *   <li>은퇴: {@value #VOLUNTARY_AGE}세 이상이고 그 시즌 메이저 출전이 없거나 메이저에서 벤치 신세면 자발적 은퇴, 아니면 45세 강제 은퇴
+ *       (레전드는 강등되지 않으므로 출전 여부만으로는 은퇴 시점을 알 수 없다)</li>
  * </ul>
  */
 @Tag("career")
@@ -75,24 +79,29 @@ class CareerBalanceTest {
     static final int VOLUNTARY_AGE = 35;
     static final int MAX_SEASONS = 30;
 
-    static final Set<AwardType> MONTHLY = EnumSet.of(AwardType.PLAYER_OF_MONTH, AwardType.PITCHER_OF_MONTH,
+    static final Set<AwardType> MONTHLY = EnumSet.of(AwardType.PLAYER_OF_MONTH, AwardType.PITCHER_OF_MONTH, AwardType.KBO_MONTHLY_MVP,
             AwardType.ROOKIE_OF_MONTH, AwardType.RELIEVER_OF_MONTH);
-    static final Set<AwardType> TOP = EnumSet.of(AwardType.MVP, AwardType.CY_YOUNG);
+    static final Set<AwardType> TOP = EnumSet.of(AwardType.MVP, AwardType.CY_YOUNG, AwardType.KBO_MVP);
+    static final Set<AwardType> ALL_STAR = EnumSet.of(AwardType.ALL_STAR, AwardType.KBO_ALL_STAR);
     static final Set<AwardType> SEASON = EnumSet.of(AwardType.ROOKIE_OF_YEAR, AwardType.SILVER_SLUGGER,
             AwardType.GOLD_GLOVE, AwardType.RELIEVER_OF_YEAR);
     static final Set<AwardType> MINORS = EnumSet.of(AwardType.MINOR_PLAYER_OF_MONTH, AwardType.MINOR_ALL_STAR,
             AwardType.MINOR_PLAYER_OF_YEAR);
 
-    record Profile(String label, Position position, Education education) {
+    record Profile(String label, Position position, Education education, LeagueMode mode) {
     }
 
     static final List<Profile> PROFILES = List.of(
-            new Profile("고졸 SS", Position.SS, Education.HIGH_SCHOOL),
-            new Profile("대졸 SS", Position.SS, Education.COLLEGE),
-            new Profile("대졸 OF", Position.OF, Education.COLLEGE),
-            new Profile("고졸 SP", Position.SP, Education.HIGH_SCHOOL),
-            new Profile("대졸 SP", Position.SP, Education.COLLEGE),
-            new Profile("대졸 CP", Position.CP, Education.COLLEGE));
+            new Profile("고졸 SS", Position.SS, Education.HIGH_SCHOOL, LeagueMode.MLB),
+            new Profile("대졸 SS", Position.SS, Education.COLLEGE, LeagueMode.MLB),
+            new Profile("대졸 OF", Position.OF, Education.COLLEGE, LeagueMode.MLB),
+            new Profile("고졸 SP", Position.SP, Education.HIGH_SCHOOL, LeagueMode.MLB),
+            new Profile("대졸 SP", Position.SP, Education.COLLEGE, LeagueMode.MLB),
+            new Profile("대졸 CP", Position.CP, Education.COLLEGE, LeagueMode.MLB),
+            // KBO 모드 (K4): 퓨처스 → 1군, 원화
+            new Profile("KBO고졸SS", Position.SS, Education.HIGH_SCHOOL, LeagueMode.KBO),
+            new Profile("KBO대졸SS", Position.SS, Education.COLLEGE, LeagueMode.KBO),
+            new Profile("KBO고졸SP", Position.SP, Education.HIGH_SCHOOL, LeagueMode.KBO));
 
     record Career(Profile profile, int draftRound, LeagueLevel startLevel, int startAge, Integer debutAge,
                   int majorSeasons, double peakOverall, Map<Integer, Double> overallByAge, Integer maxedAge, long maxSalary, long earnings, int awardPoints,
@@ -150,7 +159,7 @@ class CareerBalanceTest {
         long started = System.currentTimeMillis();
         String username = "cb" + (System.nanoTime() % 1_000_000) + "x" + index;
         Long userId = userRepository.save(new User(username, "{noop}pw", "자동" + index)).getId();
-        Player created = playerService.create(userId, form(profile, index));
+        Player created = playerService.create(userId, form(profile, index), profile.mode());
         Long playerId = created.getId();
         List<Attribute> order = Attribute.forPosition(profile.position());
 
@@ -186,7 +195,11 @@ class CareerBalanceTest {
             }
             maxSalary = Math.max(maxSalary, player.getSalary());
             int mlbSeries = seasonService.currentSeason(userId, playerId).getMlbSeriesPlayed();
-            if (player.getAge() >= VOLUNTARY_AGE && mlbSeries == 0) {
+            // 레전드(명예의 전당 150+)는 강등되지 않아 최상위 레벨 출전 기록이 계속 생기므로,
+            // 최상위 레벨에서 벤치 신세(주전 기준 −6 미만)가 되면 은퇴하는 것도 자발적 은퇴로 본다
+            boolean benchAtTop = LineupRules.standing(player.getOverall(), LeagueRulesets.of(player).topLevel())
+                    == LineupRules.Standing.BENCH;
+            if (player.getAge() >= VOLUNTARY_AGE && (mlbSeries == 0 || benchAtTop)) {
                 careerService.retire(userId, playerId);
                 break;
             }
@@ -286,8 +299,8 @@ class CareerBalanceTest {
                     c.profile().label(), c.draftRound(), c.startLevel().name(), c.startAge(),
                     c.reachedMlb() ? c.debutAge() : "-", c.majorSeasons(), c.peakOverall(),
                     c.overallAt(30), c.overallAt(35), c.overallAt(40),
-                    fmt.money(c.maxSalary()), fmt.money(c.earnings()), c.awardPoints(),
-                    c.count(MONTHLY), c.awards().getOrDefault(AwardType.ALL_STAR, 0), c.count(TOP),
+                    fmt.money(c.maxSalary(), c.profile().mode()), fmt.money(c.earnings(), c.profile().mode()), c.awardPoints(),
+                    c.count(MONTHLY), c.count(ALL_STAR), c.count(TOP),
                     c.retireAge(), c.hallOfFame(), c.forced() ? "45세" : "자발", c.statLine());
         }
 
@@ -300,7 +313,9 @@ class CareerBalanceTest {
             List<Career> group = careers.stream().filter(c -> c.profile() == profile).toList();
             printSummaryRow(profile.label(), group);
         }
-        printSummaryRow("전체", careers);
+        for (LeagueMode mode : LeagueMode.values()) {
+            printSummaryRow(mode.getLabel() + "전체", careers.stream().filter(c -> c.profile().mode() == mode).toList());
+        }
         System.out.println();
     }
 
@@ -313,11 +328,11 @@ class CareerBalanceTest {
                 average(group, Career::majorSeasons),
                 average(group, Career::peakOverall),
                 rate(group, c -> c.maxedAge() != null),
-                fmt.money((long) median(group, c -> c.earnings())),
-                fmt.money((long) median(group, c -> c.maxSalary())),
+                fmt.money((long) median(group, c -> c.earnings()), mode(group)),
+                fmt.money((long) median(group, c -> c.maxSalary()), mode(group)),
                 average(group, Career::awardPoints),
                 average(group, c -> c.count(MONTHLY)),
-                average(group, c -> c.awards().getOrDefault(AwardType.ALL_STAR, 0)),
+                average(group, c -> c.count(ALL_STAR)),
                 average(group, c -> c.count(TOP)),
                 average(group, Career::retireAge),
                 rate(group, c -> c.hallLabel() != null));
@@ -332,6 +347,11 @@ class CareerBalanceTest {
 
     static double average(List<Career> group, ToDoubleFunction<Career> value) {
         return group.stream().mapToDouble(value).average().orElse(0);
+    }
+
+    /** 금액 표시 통화 (그룹은 한 모드씩 묶는다) */
+    static LeagueMode mode(List<Career> group) {
+        return group.isEmpty() ? LeagueMode.MLB : group.get(0).profile().mode();
     }
 
     static double rate(List<Career> group, Predicate<Career> condition) {
@@ -356,12 +376,18 @@ class CareerBalanceTest {
     }
 
     @Test
-    void 메이저리거의_누적_수입은_수백만에서_수억_달러_사이다() {
-        List<Career> reached = careers.stream().filter(c -> c.majorSeasons() >= 3).toList();
-        if (reached.isEmpty()) {
-            return;
+    void 최상위_레벨_선수의_누적_수입은_모드별_적정_범위다() {
+        List<Career> reached = careers.stream()
+                .filter(c -> c.majorSeasons() >= 3 && c.profile().mode() == LeagueMode.MLB).toList();
+        if (!reached.isEmpty()) {
+            assertThat(median(reached, c -> c.earnings())).isBetween(3_000_000.0, 500_000_000.0);
         }
-        assertThat(median(reached, c -> c.earnings())).isBetween(3_000_000.0, 500_000_000.0);
+        // KBO 1군 3시즌 이상: 수억 ~ 수백억 원
+        List<Career> kbo = careers.stream()
+                .filter(c -> c.majorSeasons() >= 3 && c.profile().mode() == LeagueMode.KBO).toList();
+        if (!kbo.isEmpty()) {
+            assertThat(median(kbo, c -> c.earnings())).isBetween(300_000_000.0, 50_000_000_000.0);
+        }
     }
 
     @Test

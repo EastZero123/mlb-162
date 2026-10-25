@@ -80,6 +80,14 @@ class PromotionRulesTest {
     }
 
     @Test
+    void 명예의_전당_점수_150_이상이면_메이저_강등이_면제된다() {
+        assertThat(PromotionRules.isDemotionExempt(LeagueLevel.MLB, 150)).isTrue();
+        assertThat(PromotionRules.isDemotionExempt(LeagueLevel.MLB, 149)).isFalse();
+        // 마이너 레벨 사이 강등은 점수와 상관없이 그대로
+        assertThat(PromotionRules.isDemotionExempt(LeagueLevel.AAA, 300)).isFalse();
+    }
+
+    @Test
     void 메이저는_승격이_없고_루키는_강등이_없다() {
         assertThat(PromotionRules.evaluate(LeagueLevel.MLB, 90, Position.SS, null, null).verdict()).isEqualTo(Verdict.STAY);
         assertThat(PromotionRules.evaluate(LeagueLevel.ROOKIE, 10, Position.SS, null, null).verdict()).isEqualTo(Verdict.STAY);

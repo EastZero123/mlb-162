@@ -16,6 +16,7 @@ import com.mlbgame.award.AwardService;
 import com.mlbgame.league.LeagueLevel;
 import com.mlbgame.league.Team;
 import com.mlbgame.league.TeamRepository;
+import com.mlbgame.league.mode.LeagueRulesets;
 import com.mlbgame.league.world.LeagueWorldRepository;
 import com.mlbgame.player.Player;
 import com.mlbgame.player.PlayerService;
@@ -54,6 +55,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 명예의 전당 점수
  *   타자 = 메이저 안타/20 + 홈런/5 + 수상 포인트 × 3 + 메이저 주요 시즌(27시리즈 이상) × 2 + 우승 × 5
  *   투수 = 메이저 승 × 2 + 세이브/2 + 탈삼진/30 + 수상 포인트 × 3 + 메이저 주요 시즌 × 2 + 우승 × 5
+ *   안타·홈런·승·세이브·탈삼진 항목은 162 / 시즌 경기 수 를 곱한다 (KBO 144경기 → ×1.125)
  *   150 이상 "명예의 전당 헌액" / 100 이상 "명예의 전당 후보"
  *
  * 월드시리즈 우승: 메이저 소속으로 정규시즌을 마친 팀이 그해 포스트시즌 우승 (시즌 중 트레이드면 마친 팀 기준)
@@ -138,6 +140,7 @@ public class CareerService {
             double combine = combineSummaryRepository.findById(player.getId()).map(CombineSummary::getTotalScore).orElse(0.0);
             RankingEntry entry = RankingEntry.of(player.getId(), player.getUserId(), nickname, player.getName(),
                             player.getPosition(), player.getAge(), summary.seasons().size(), LocalDateTime.now(KOREA))
+                    .mode(player.getLeagueMode())
                     .career(summary.careerEarnings(), summary.hallOfFameScore(), summary.awardPoints(), combine);
             if (player.isPitcher()) {
                 PitchingLine p = summary.mlbPitching();
@@ -212,7 +215,7 @@ public class CareerService {
         BattingLine mlbBatting = new BattingLine();
         PitchingLine mlbPitching = new PitchingLine();
         for (SeriesRecord record : seriesRecordRepository.findByPlayerIdOrderBySeasonYearAscSeriesNoAsc(playerId)) {
-            if (record.getLeagueLevel() != LeagueLevel.MLB) {
+            if (!record.getLeagueLevel().isTop()) {
                 continue;
             }
             SeriesSummary summary = seriesRecorder.readSummary(record);
@@ -229,7 +232,7 @@ public class CareerService {
         Map<Integer, Long> championTeamByYear = championships(postseasons, seasonByYear);
         List<Integer> championshipYears = championTeamByYear.keySet().stream().sorted().toList();
         int score = hallOfFameScore(player.isPitcher(), mlbBatting, mlbPitching, awardPoints, majorSeasons,
-                championshipYears.size());
+                championshipYears.size(), LeagueRulesets.of(player).hallOfFameStatScale());
 
         SeasonSplits.Tables records = seasonSplits.career(playerId, championTeamByYear);
         Map<Integer, Integer> seriesPlayedByYear = seasons.stream()
@@ -240,7 +243,8 @@ public class CareerService {
         return new Summary(player, rows, mlbBatting, mlbPitching, majorSeasons, awards, awardPoints,
                 earningsService.careerTotal(playerId), seasonService.levelHistory(playerId),
                 tradeService.career(playerId), score, records,
-                postseasonRows(postseasons, seasonByYear, teams, championTeamByYear), championshipYears, detail);
+                postseasonRows(postseasons, seasonByYear, teams, championTeamByYear, LeagueRulesets.of(player).topLevel()),
+                championshipYears, detail);
     }
 
     /**
@@ -252,7 +256,7 @@ public class CareerService {
         Map<Integer, Long> champions = new HashMap<>();
         for (Postseason p : postseasons) {
             PlayerSeason season = seasonByYear.get(p.getSeasonYear());
-            if (p.isDone() && season != null && season.getLeagueLevel() == LeagueLevel.MLB
+            if (p.isDone() && season != null && season.getLeagueLevel().isTop()
                     && season.getTeamId().equals(p.getChampionTeamId())) {
                 champions.put(p.getSeasonYear(), p.getChampionTeamId());
             }
@@ -262,7 +266,8 @@ public class CareerService {
 
     /** 포스트시즌 기록표: 내 선수가 직접 뛴(메이저 소속·출전) 해만, 맨 아래 통산 */
     private List<SeasonSplits.Row> postseasonRows(List<Postseason> postseasons, Map<Integer, PlayerSeason> seasonByYear,
-                                                  Map<Long, Team> teams, Map<Integer, Long> championTeamByYear) {
+                                                  Map<Long, Team> teams, Map<Integer, Long> championTeamByYear,
+                                                  LeagueLevel top) {
         List<SeasonSplits.Row> rows = new ArrayList<>();
         BattingLine totalBatting = new BattingLine();
         PitchingLine totalPitching = new PitchingLine();
@@ -273,14 +278,14 @@ public class CareerService {
             if (season == null || !p.isUserPlays() || (batting.games == 0 && pitching.games == 0)) {
                 continue;
             }
-            rows.add(new SeasonSplits.Row(SeasonSplits.Kind.SPLIT, p.getSeasonYear(), LeagueLevel.MLB,
+            rows.add(new SeasonSplits.Row(SeasonSplits.Kind.SPLIT, p.getSeasonYear(), top,
                     teams.get(season.getTeamId()), 1, batting, pitching, null,
                     championTeamByYear.containsKey(p.getSeasonYear())));
             totalBatting.add(batting);
             totalPitching.add(pitching);
         }
         if (!rows.isEmpty()) {
-            rows.add(new SeasonSplits.Row(SeasonSplits.Kind.CAREER_TOTAL, null, LeagueLevel.MLB, null, 0,
+            rows.add(new SeasonSplits.Row(SeasonSplits.Kind.CAREER_TOTAL, null, top, null, 0,
                     totalBatting, totalPitching, null, false));
         }
         return rows;
@@ -288,11 +293,20 @@ public class CareerService {
 
     static int hallOfFameScore(boolean pitcher, BattingLine batting, PitchingLine pitching, int awardPoints,
                                int majorSeasons, int championships) {
+        return hallOfFameScore(pitcher, batting, pitching, awardPoints, majorSeasons, championships, 1.0);
+    }
+
+    /**
+     * @param statScale 누적 기록 보정 — 시즌 경기 수가 적은 리그(KBO 144경기)는 같은 커리어라도 누적이 적으므로
+     *                  162 / 시즌 경기 수 만큼 키운다 ({@code LeagueRuleset.hallOfFameStatScale})
+     */
+    static int hallOfFameScore(boolean pitcher, BattingLine batting, PitchingLine pitching, int awardPoints,
+                               int majorSeasons, int championships, double statScale) {
         double score = awardPoints * 3 + majorSeasons * 2 + championships * CHAMPIONSHIP_POINTS;
         if (pitcher) {
-            score += pitching.wins * 2 + pitching.saves / 2.0 + pitching.strikeouts / 30.0;
+            score += (pitching.wins * 2 + pitching.saves / 2.0 + pitching.strikeouts / 30.0) * statScale;
         } else {
-            score += batting.hits / 20.0 + batting.homeRuns / 5.0;
+            score += (batting.hits / 20.0 + batting.homeRuns / 5.0) * statScale;
         }
         return (int) Math.round(score);
     }

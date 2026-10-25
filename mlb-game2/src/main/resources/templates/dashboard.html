@@ -9,6 +9,13 @@
     <div class="alert alert-info" th:if="${headlines != null}">
         <p th:each="h : ${headlines}" th:text="${h}" style="margin:0">은퇴</p>
     </div>
+    <div class="alert alert-info" th:unless="${currentModeAvailable}"
+         th:text="#{mode.notReadyNotice(${currentMode.label})}">
+        KBO 모드는 준비 중입니다.
+    </div>
+    <p class="muted small" th:text="#{dashboard.modeSlots(${currentMode.label}, ${players.size() + emptySlots})}">
+        MLB 모드 선수 슬롯
+    </p>
 
     <section class="slots">
         <article class="card slot player-card" th:each="p : ${players}"
@@ -57,7 +64,8 @@
         <div class="card slot slot-empty" th:each="i : ${emptySlots > 0 ? #numbers.sequence(1, emptySlots) : {}}">
             <div class="slot-no" th:text="#{dashboard.emptySlot}">빈 슬롯</div>
             <p class="slot-text" th:text="#{dashboard.noPlayer}">아직 선수가 없습니다</p>
-            <a class="btn btn-primary" th:href="@{/players/new}" th:text="#{dashboard.createPlayer}">선수 생성</a>
+            <a class="btn btn-primary" th:if="${currentModeAvailable}" th:href="@{/players/new}" th:text="#{dashboard.createPlayer}">선수 생성</a>
+            <span class="muted small" th:unless="${currentModeAvailable}" th:text="#{mode.notReadyShort}">준비 중</span>
         </div>
     </section>
 

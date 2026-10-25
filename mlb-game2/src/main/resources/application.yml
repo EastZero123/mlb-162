@@ -36,6 +36,15 @@ game:
       double-share: 0.23       # 인플레이 안타 중 2루타
       triple-share: 0.02       # 인플레이 안타 중 3루타
       ground-ball-share: 0.45  # 인플레이 아웃 중 땅볼
+    kbo-baseline:              # KBO 리그 평균 (2023~2025 근사: 타율 .268 / 출루율 .345 / 장타율 .405). 능력치 계수는 MLB 와 공통
+      strikeout-rate: 0.190
+      walk-rate: 0.090
+      hit-by-pitch-rate: 0.013
+      home-run-rate: 0.023
+      babip: 0.318              # 타율 .268 이 되도록 (K4)
+      double-share: 0.22
+      triple-share: 0.015
+      ground-ball-share: 0.46
     coefficients:              # 능력치 10 차이당 로그 오즈 변화량 (사건마다 타자 합 = 투수 합)
       strikeout-avoid-k: 0.30      # 타자 0.30 = 투수 0.20 + 0.10
       strikeout-put-away: 0.20

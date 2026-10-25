@@ -100,12 +100,14 @@ public class SeasonSplits {
         Accumulator mlbCareer = new Accumulator();
         Accumulator minorCareer = new Accumulator();
         Map<Integer, List<Map.Entry<Key, Accumulator>>> mlbByYear = new LinkedHashMap<>();
+        LeagueLevel top = null;                  // 이 선수 모드의 최상위 레벨 (메이저리그·KBO 1군)
 
         for (Map.Entry<Key, Accumulator> e : splits.entrySet()) {
             if (!e.getValue().played()) {
                 continue;
             }
-            if (e.getKey().level() == LeagueLevel.MLB) {
+            if (e.getKey().level().isTop()) {
+                top = e.getKey().level();
                 mlbByYear.computeIfAbsent(e.getKey().year(), y -> new ArrayList<>()).add(e);
             } else {
                 Key k = e.getKey();
@@ -118,16 +120,16 @@ public class SeasonSplits {
             for (Map.Entry<Key, Accumulator> e : year.getValue()) {
                 Key k = e.getKey();
                 boolean champion = k.teamId().equals(championTeamByYear.get(k.year()));
-                mlb.add(e.getValue().row(Kind.SPLIT, k.year(), LeagueLevel.MLB, teams.get(k.teamId()), 1, champion));
+                mlb.add(e.getValue().row(Kind.SPLIT, k.year(), k.level(), teams.get(k.teamId()), 1, champion));
                 yearTotal.add(e.getValue());
             }
             if (year.getValue().size() > 1) {
-                mlb.add(yearTotal.row(Kind.YEAR_TOTAL, year.getKey(), LeagueLevel.MLB, null, year.getValue().size(), false));
+                mlb.add(yearTotal.row(Kind.YEAR_TOTAL, year.getKey(), top, null, year.getValue().size(), false));
             }
             mlbCareer.add(yearTotal);
         }
         if (!mlb.isEmpty()) {
-            mlb.add(mlbCareer.row(Kind.CAREER_TOTAL, null, LeagueLevel.MLB, null, 0, false));
+            mlb.add(mlbCareer.row(Kind.CAREER_TOTAL, null, top, null, 0, false));
         }
         if (!minors.isEmpty()) {
             minors.add(minorCareer.row(Kind.CAREER_TOTAL, null, null, null, 0, false));
